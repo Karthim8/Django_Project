@@ -168,7 +168,7 @@
       <div class="profile-stats-row reveal">
         <div class="clay-card psr-card">
           <div class="psr-icon">🐙</div>
-          <div class="psr-num" style="color:var(--ink)">9</div>
+          <div class="psr-num" style="color:var(--ink)">{{ github_repo_count|default:0 }}</div>
           <div class="psr-lbl">GitHub repos</div>
         </div>
         <div class="clay-card psr-card">
@@ -190,8 +190,28 @@
 
       <!-- GitHub repos -->
       <div class="clay-card github-card reveal">
-        <h3>🐙 GitHub Projects <span style="font-size:13px;font-weight:400;color:var(--muted)">synced from github.com/priya-venkat</span></h3>
+        <h3>🐙 GitHub Projects <span style="font-size:13px;font-weight:400;color:var(--muted)">synced from github.com/{{ user.profile.github|default:'...' }}</span></h3>
+        {% if github_error %}
+        <div style="padding:12px; margin-bottom:16px; background:var(--rust-light); color:var(--rust); border-radius:10px; font-size:13px; border:1px solid rgba(193,68,14,0.2);">
+          <strong>Unable to sync GitHub:</strong> {{ github_error }}
+        </div>
+        {% endif %}
         <div class="repo-list">
+          {% if github_repos %}
+            {% for repo in github_repos %}
+            <div class="repo-item" onclick="window.open('{{ repo.html_url }}', '_blank')" style="cursor:pointer">
+              <div class="repo-name">{{ repo.name }}</div>
+              <div class="repo-desc">{{ repo.description|default:"No description provided."|truncatechars:120 }}</div>
+              <div class="repo-meta">
+                {% if repo.language %}
+                <span class="repo-lang"><span class="repo-lang-dot" style="background:#3572A5"></span>{{ repo.language }}</span>
+                {% endif %}
+                <span class="repo-stars">⭐ {{ repo.stargazers_count }}</span>
+                <span class="repo-forks">🍴 {{ repo.forks_count }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
           <div class="repo-item">
             <div class="repo-name">nexuslink-backend</div>
             <div class="repo-desc">Django + Channels real-time campus networking platform with WebSocket group chat and REST API.</div>
@@ -228,6 +248,7 @@
               <span class="repo-forks">🍴 1</span>
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
 

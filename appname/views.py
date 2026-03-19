@@ -1,4 +1,6 @@
 from django.shortcuts import render
+import urllib.request
+import json
 
 def index(request):
     return render(request, "index.html")
@@ -51,7 +53,41 @@ def profile_view(request):
             badge.role = role or badge.role
             badge.save()
 
-    return render(request, "profile.html")
+    github_repos = []
+    github_repo_count = 0
+    github_error = None
+    if request.user.is_authenticated:
+        profile = getattr(request.user, 'profile', None)
+        if profile and profile.github:
+            username = profile.github.strip()
+            # Clean up url if pasted directly
+            if 'github.com/' in username:
+                username = username.split('github.com/')[-1].strip('/')
+            if username:
+                try:
+                    import ssl
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                    url = f"https://api.github.com/users/{username}/repos?per_page=100"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                    with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+                        data = json.loads(response.read().decode())
+                        if isinstance(data, list):
+                            github_repo_count = len(data)
+                            sorted_repos = sorted(data, key=lambda r: r.get('stargazers_count', 0), reverse=True)
+                            github_repos = sorted_repos[:4]
+                        else:
+                            github_error = data.get('message', 'Unknown API Response')
+                except Exception as e:
+                    print(f"GitHub API Error for {username}: {e}")
+                    github_error = str(e)
+
+    return render(request, "profile.html", {
+        "github_repos": github_repos,
+        "github_repo_count": github_repo_count,
+        "github_error": github_error
+    })
 
 def resources_view(request):
     return render(request, "resources.html")
