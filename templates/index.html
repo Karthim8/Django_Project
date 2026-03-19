@@ -1,0 +1,226 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusLink — Bridge Every Batch</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}">
+<link rel="stylesheet" href="{% static 'pages.css' %}">
+
+<style>
+.user-avatar-nav {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  position: relative;
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust);
+  transition: box-shadow 0.2s;
+}
+.user-avatar-nav:hover {
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust);
+}
+.user-avatar-nav img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  background: var(--rust); color: white;
+  font-size: 13px; font-weight: 800;
+  font-family: var(--font-body);
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="blob blob--mint"></div>
+  <div class="blob blob--lilac"></div>
+  <div class="blob blob--peach"></div>
+  <div class="ornament orn-circle"></div>
+  <div class="ornament orn-ring"></div>
+  <div class="ornament orn-dot-grid"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="pill pill--green"><span class="blink-dot"></span> 2,400+ students online</span>
+    </div>
+    <h1 class="hero-title">Where <em>seniors</em><br><span class="title-outline">become</span><br>your mentors.</h1>
+    <p class="hero-body">A warm campus network where knowledge flows freely — share notes, study together in real time, and follow the trail of every placed senior.</p>
+    <div class="hero-cta">
+      <a href="{% url 'connect' %}" class="btn-clay btn-clay--rust btn-clay--lg">Get started free <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9h10M10 5l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline btn-clay--lg">Explore profiles</a>
+    </div>
+    <div class="hero-chips">
+      <a href="{% url 'resources' %}" class="feature-chip chip--mint">📚 Resource Hub</a>
+      <a href="{% url 'chat' %}"      class="feature-chip chip--lilac">💬 Real-time Chat</a>
+      <a href="{% url 'rooms' %}"     class="feature-chip chip--peach">🔐 Study Rooms</a>
+      <a href="{% url 'profile' %}"   class="feature-chip chip--yellow">🐙 GitHub Stats</a>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="clay-card hero-card-main">
+      <div class="hc-header">
+        <div class="hc-avatar" style="background:var(--rust)">AK</div>
+        <div><div class="hc-name">Anjali Kumar</div><div class="hc-role">Google · SWE Intern ✦</div></div>
+        <span class="pill pill--green" style="margin-left:auto;font-size:10px">Senior</span>
+      </div>
+      <div class="hc-stats">
+        <div class="hc-stat"><span>24</span><small>Projects</small></div>
+        <div class="hc-stat"><span>812</span><small>Solved</small></div>
+        <div class="hc-stat"><span>1847</span><small>CF Rating</small></div>
+      </div>
+      <div class="hc-skills">
+        <span class="skill-tag">Python</span><span class="skill-tag">ML</span><span class="skill-tag">React</span><span class="skill-tag">DSA</span>
+      </div>
+      <a href="{% url 'profile' %}" class="btn-clay btn-clay--sage" style="width:100%;margin-top:16px;display:flex">View Profile</a>
+    </div>
+    <div class="clay-card hero-card-chat">
+      <div class="chat-title">💬 Private Chat</div>
+      <div class="chat-msgs">
+        <div class="chat-msg msg-in"  style="animation-delay:0.3s"><div class="chat-bubble">Hey! Happy to help with DSA prep 👋</div></div>
+        <div class="chat-msg msg-out" style="animation-delay:0.9s"><div class="chat-bubble">Thanks! Any tips for graph problems?</div></div>
+        <div class="chat-msg msg-in"  style="animation-delay:1.5s"><div class="chat-bubble">Check the DSA PDF I uploaded! 📄</div></div>
+      </div>
+    </div>
+    <div class="clay-card hero-card-stat">
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Study Room</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:8px">Graph Theory Marathon</div>
+      <div class="room-avatars">
+        <div class="ra" style="background:var(--rust)">A</div>
+        <div class="ra" style="background:var(--mint-mid)">P</div>
+        <div class="ra" style="background:var(--lilac-mid)">M</div>
+        <div class="ra" style="background:var(--yellow-mid)">K</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">+6 studying now</div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap"><div class="ticker-track">
+  <span>Share Resources ✦</span><span>Real-time Chat ✦</span><span>Study Rooms ✦</span><span>GitHub Projects ✦</span><span>Codeforces Stats ✦</span><span>Connect Peers ✦</span><span>Follow &amp; Collaborate ✦</span><span>Get Placed ✦</span>
+  <span>Share Resources ✦</span><span>Real-time Chat ✦</span><span>Study Rooms ✦</span><span>GitHub Projects ✦</span><span>Codeforces Stats ✦</span><span>Connect Peers ✦</span><span>Follow &amp; Collaborate ✦</span><span>Get Placed ✦</span>
+</div></div>
+
+<!-- STATS -->
+<section class="stats-bar reveal">
+  <div class="stat-block"><div class="stat-num" data-count="4200">0</div><div class="stat-lbl">Students joined</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat-block"><div class="stat-num" data-count="380">0</div><div class="stat-lbl">Resources shared</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat-block"><div class="stat-num" data-count="120">0</div><div class="stat-lbl">Study rooms live</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat-block"><div class="stat-num" data-count="58">0</div><div class="stat-lbl">Companies placed</div></div>
+</section>
+
+<!-- FEATURES GRID (links to pages) -->
+<section class="features" id="features" style="padding-top:100px;padding-bottom:100px">
+  <div class="section-header reveal" style="max-width:1280px;margin:0 auto 60px">
+    <p class="eyebrow">What you get</p>
+    <h2 class="section-title">Everything a <em>campus needs.</em></h2>
+    <p class="section-body">Built around how students actually learn and grow — together.</p>
+  </div>
+  <div class="feat-grid reveal" style="max-width:1280px;margin:0 auto">
+    <a href="{% url 'resources' %}" class="feat-card clay-card" style="--card-accent:var(--rust);text-decoration:none;color:inherit">
+      <div class="feat-icon-wrap" style="background:var(--rust-light)">📚</div>
+      <h3>Resource Hub</h3>
+      <p>Upload notes, PYQs, cheat sheets. Any student can download. Organised by subject.</p>
+      <div class="feat-tag" style="background:var(--rust-light);color:var(--rust)">Upload & Download →</div>
+    </a>
+    <a href="{% url 'chat' %}" class="feat-card clay-card" style="--card-accent:var(--mint-mid);text-decoration:none;color:inherit">
+      <div class="feat-icon-wrap" style="background:var(--mint-light)">💬</div>
+      <h3>Real-time Chat</h3>
+      <p>Private DMs gated by follow-approval. Only your accepted peers can message you.</p>
+      <div class="feat-tag" style="background:var(--mint-light);color:var(--sage)">WebSocket Live →</div>
+    </a>
+    <a href="{% url 'rooms' %}" class="feat-card clay-card" style="--card-accent:var(--lilac-mid);text-decoration:none;color:inherit">
+      <div class="feat-icon-wrap" style="background:var(--lilac-light)">🔐</div>
+      <h3>Study Rooms</h3>
+      <p>Password-protected rooms for focused group study. Create one in 10 seconds.</p>
+      <div class="feat-tag" style="background:var(--lilac-light);color:var(--lilac-mid)">Password Protected →</div>
+    </a>
+    <a href="{% url 'profile' %}" class="feat-card clay-card" style="--card-accent:var(--yellow-mid);text-decoration:none;color:inherit">
+      <div class="feat-icon-wrap" style="background:var(--yellow-light)">🐙</div>
+      <h3>GitHub Projects</h3>
+      <p>Link your GitHub ID. Repos are auto-pulled and shown live on your profile.</p>
+      <div class="feat-tag" style="background:var(--yellow-light);color:#9a6f00">Auto-synced →</div>
+    </a>
+    <a href="{% url 'profile' %}" class="feat-card clay-card" style="--card-accent:var(--peach-mid);text-decoration:none;color:inherit">
+      <div class="feat-icon-wrap" style="background:var(--peach-light)">⚡</div>
+      <h3>Codeforces Stats</h3>
+      <p>Link your handle. Rating, rank, and problems solved displayed live on your badge.</p>
+      <div class="feat-tag" style="background:var(--peach-light);color:#a84e00">Live Sync →</div>
+    </a>
+    <a href="{% url 'connect' %}" class="feat-card clay-card" style="--card-accent:var(--sage);text-decoration:none;color:inherit">
+      <div class="feat-icon-wrap" style="background:var(--mint-light)">🤝</div>
+      <h3>Connect Peers</h3>
+      <p>Search by branch, skill, or company. Follow → approval → collaborate. Zero spam.</p>
+      <div class="feat-tag" style="background:var(--mint-light);color:var(--sage)">Follow-Gated →</div>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a href="{% url 'index' %}" class="logo" style="color:var(--chalk)"><div class="logo-mark">N</div><span>NexusLink</span></a>
+      <p>The campus network that turns college into a community — seniors guiding juniors, juniors inspiring seniors.</p>
+    </div>
+    <div class="footer-links">
+      <div class="fl-col"><h4>Platform</h4><a href="{% url 'resources' %}">Resource Hub</a><a href="{% url 'chat' %}">Real-time Chat</a><a href="{% url 'rooms' %}">Study Rooms</a><a href="{% url 'connect' %}">Connect Peers</a></div>
+      <div class="fl-col"><h4>Profile</h4><a href="{% url 'profile' %}">My Profile</a><a href="{% url 'profile' %}">GitHub Connect</a><a href="{% url 'profile' %}">Codeforces Link</a><a href="{% url 'profile' %}">Skills & Badges</a></div>
+      <div class="fl-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 NexusLink. Built for students, by students.</span><span>Made with ♥ in Tamil Nadu</span></div>
+</footer>
+
+<script src="{% static 'app.js' %}"></script>
+</body>
+</html>

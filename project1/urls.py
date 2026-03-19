@@ -20,5 +20,6 @@ from django.urls import path,include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('appname.urls')),
-    path('accounts/', include('allauth.urls')),  # 🔥 Google login here
+    path('accounts/', include('accounts.urls')),   # Custom signup + verify
+    path('accounts/', include('allauth.urls')),     # Google login / allauth
 ]

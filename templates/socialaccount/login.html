@@ -1,0 +1,171 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in with Google — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--chalk);
+    margin: 0;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+  .auth-wrap {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 10;
+  }
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 28px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .auth-logo-mark {
+    background: var(--rust);
+    color: white;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 900;
+    box-shadow: 3px 3px 0 rgba(193,68,14,0.3);
+  }
+  .auth-logo span {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 900;
+  }
+  .auth-card {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 36px;
+    width: 100%;
+    box-shadow: 8px 8px 0 rgba(44,36,22,0.10);
+    border: 2px solid var(--border);
+    text-align: center;
+  }
+  .google-icon-wrap {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--chalk-warm);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .auth-title {
+    font-family: var(--font-display);
+    font-size: 24px; font-weight: 900;
+    margin: 0 0 8px 0;
+  }
+  .auth-subtitle {
+    font-family: var(--font-body);
+    font-size: 13px; color: var(--muted);
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+  }
+  .btn-continue {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--rust);
+    color: white;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 4px 4px 0 rgba(193,68,14,0.3);
+    text-decoration: none;
+    margin-bottom: 12px;
+  }
+  .btn-continue:hover {
+    transform: translate(-2px,-2px);
+    box-shadow: 6px 6px 0 rgba(193,68,14,0.25);
+  }
+  .btn-cancel {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-cancel:hover { background: var(--chalk-warm); color: var(--ink); }
+  .trust-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+<div class="blob blob--mint" style="position:fixed;top:-120px;right:-100px;z-index:0;"></div>
+<div class="blob blob--peach" style="position:fixed;bottom:-120px;left:-100px;z-index:0;"></div>
+
+<div class="auth-wrap">
+  <a href="{% url 'index' %}" class="auth-logo">
+    <div class="auth-logo-mark">N</div>
+    <span>NexusLink</span>
+  </a>
+
+  <div class="auth-card">
+    <div class="google-icon-wrap">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-1 7.28-2.69l-3.57-2.77c-.99.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.07c-.22-.66-.35-1.36-.35-2.07s.13-1.41.35-2.07V7.09H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.91l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.09l3.66 2.84c.87-2.6 3.3-4.55 6.16-4.55z" fill="#EA4335"/>
+      </svg>
+    </div>
+
+    <h1 class="auth-title">Sign in with Google</h1>
+    <p class="auth-subtitle">
+      You're about to sign in using your Google account.<br>
+      NexusLink will receive your name and email address.
+    </p>
+
+    <form method="post" action="">
+      {% csrf_token %}
+      <button type="submit" class="btn-continue">Continue with Google →</button>
+    </form>
+
+    <a href="{% url 'account_login' %}" class="btn-cancel">Cancel, go back</a>
+
+    <div class="trust-note">
+      🔒 Secure · Your password is never shared with NexusLink
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'app.js' %}"></script>
+</body>
+</html>

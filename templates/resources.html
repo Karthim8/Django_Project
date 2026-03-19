@@ -1,0 +1,263 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resources — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+
+<style>
+.user-avatar-nav {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  position: relative;
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust);
+  transition: box-shadow 0.2s;
+}
+.user-avatar-nav:hover {
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust);
+}
+.user-avatar-nav img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  background: var(--rust); color: white;
+  font-size: 13px; font-weight: 800;
+  font-family: var(--font-body);
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'resources' %}" class="active">Resources</a></li>
+      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="page-hero-inner reveal">
+    <p class="eyebrow">Resource Hub</p>
+    <h1>Every note.<br><em>One place.</em></h1>
+    <p>Upload your notes for juniors. Download from seniors. The campus knowledge base that grows itself — organised by subject, year, and type.</p>
+    <div class="page-hero-actions">
+      <button class="btn-clay btn-clay--rust btn-clay--lg" onclick="document.getElementById('upload-section').scrollIntoView({behavior:'smooth'})">Upload a resource</button>
+      <button class="btn-clay btn-clay--outline btn-clay--lg">Browse all</button>
+    </div>
+  </div>
+  <div class="page-hero-num">📚</div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+  <div class="res-page-grid">
+
+    <!-- SIDEBAR -->
+    <aside class="res-sidebar">
+      <!-- Upload card -->
+      <div class="clay-card upload-big reveal" id="upload-section">
+        <h3>Upload a resource</h3>
+        <div class="upload-drop">
+          <div class="upload-drop-icon">📁</div>
+          <h4>Drop your file here</h4>
+          <p>PDF, PPT, DOCX, ZIP supported</p>
+          <button class="btn-clay btn-clay--rust">Browse files</button>
+        </div>
+        <div class="upload-meta">
+          <div class="form-field"><label>Subject</label><select><option>Data Structures</option><option>DBMS</option><option>OS</option><option>Networks</option><option>System Design</option></select></div>
+          <div class="form-field"><label>Year</label><select><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></div>
+          <div class="form-field" style="grid-column:span 2"><label>Resource name</label><input type="text" placeholder="e.g. DSA Advanced — Graphs & DP"></div>
+        </div>
+        <button class="btn-clay btn-clay--rust" style="width:100%;margin-top:16px">Upload now</button>
+      </div>
+
+      <!-- Filter card -->
+      <div class="clay-card res-filter-card reveal">
+        <h3>Filter</h3>
+        <div class="filter-group">
+          <label>Subject</label>
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">DSA</button>
+          <button class="filter-chip">DBMS</button>
+          <button class="filter-chip">OS</button>
+          <button class="filter-chip">Networks</button>
+          <button class="filter-chip">System Design</button>
+          <button class="filter-chip">Maths</button>
+        </div>
+        <div class="filter-group">
+          <label>Type</label>
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">Notes</button>
+          <button class="filter-chip">PYQs</button>
+          <button class="filter-chip">Slides</button>
+          <button class="filter-chip">Cheatsheet</button>
+        </div>
+        <div class="filter-group">
+          <label>Year</label>
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">1st</button>
+          <button class="filter-chip">2nd</button>
+          <button class="filter-chip">3rd</button>
+          <button class="filter-chip">4th</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN LIST -->
+    <div class="res-main reveal">
+      <div class="res-toolbar">
+        <h2>All Resources <span style="font-size:14px;color:var(--muted);font-weight:400">(48 files)</span></h2>
+        <div class="res-search">
+          <span>🔍</span>
+          <input type="text" placeholder="Search resources…">
+        </div>
+      </div>
+
+      <div class="res-cards">
+        <div class="clay-card res-card-full">
+          <div class="rcf-icon" style="background:var(--rust-light)">📄</div>
+          <div class="rcf-info">
+            <div class="rcf-name">DSA Advanced — Graphs & DP.pdf</div>
+            <div class="rcf-meta">Uploaded by <strong>Anjali Kumar</strong> (Google SWE) · 2.4 MB · 3 days ago</div>
+            <div class="rcf-tags"><span>DSA</span><span>Graphs</span><span>Dynamic Programming</span><span>3rd Year</span></div>
+          </div>
+          <div class="rcf-right">
+            <div class="rcf-size">2.4 MB</div>
+            <div class="rcf-downloads">↓ 142 downloads</div>
+            <button class="btn-clay btn-clay--rust btn-sm">↓ Download</button>
+          </div>
+        </div>
+
+        <div class="clay-card res-card-full">
+          <div class="rcf-icon" style="background:var(--mint-light)">📊</div>
+          <div class="rcf-info">
+            <div class="rcf-name">System Design Interview Prep.pptx</div>
+            <div class="rcf-meta">Uploaded by <strong>Mohammed Saleem</strong> (Amazon SDE) · 8.1 MB · 1 week ago</div>
+            <div class="rcf-tags"><span>System Design</span><span>Interview</span><span>4th Year</span></div>
+          </div>
+          <div class="rcf-right">
+            <div class="rcf-size">8.1 MB</div>
+            <div class="rcf-downloads">↓ 98 downloads</div>
+            <button class="btn-clay btn-clay--sage btn-sm">↓ Download</button>
+          </div>
+        </div>
+
+        <div class="clay-card res-card-full">
+          <div class="rcf-icon" style="background:var(--lilac-light)">📝</div>
+          <div class="rcf-info">
+            <div class="rcf-name">DBMS Complete Notes — Unit 1–5.pdf</div>
+            <div class="rcf-meta">Uploaded by <strong>Ravi Kumar</strong> · 5.8 MB · 2 weeks ago</div>
+            <div class="rcf-tags"><span>DBMS</span><span>Notes</span><span>Exam Prep</span><span>2nd Year</span></div>
+          </div>
+          <div class="rcf-right">
+            <div class="rcf-size">5.8 MB</div>
+            <div class="rcf-downloads">↓ 211 downloads</div>
+            <button class="btn-clay btn-clay--lilac btn-sm">↓ Download</button>
+          </div>
+        </div>
+
+        <div class="clay-card res-card-full">
+          <div class="rcf-icon" style="background:var(--yellow-light)">📋</div>
+          <div class="rcf-info">
+            <div class="rcf-name">OS Previous Year Questions 2019–2023.pdf</div>
+            <div class="rcf-meta">Uploaded by <strong>Divya S</strong> · 1.2 MB · 1 month ago</div>
+            <div class="rcf-tags"><span>OS</span><span>PYQs</span><span>2nd Year</span></div>
+          </div>
+          <div class="rcf-right">
+            <div class="rcf-size">1.2 MB</div>
+            <div class="rcf-downloads">↓ 389 downloads</div>
+            <button class="btn-clay btn-clay--outline btn-sm">↓ Download</button>
+          </div>
+        </div>
+
+        <div class="clay-card res-card-full">
+          <div class="rcf-icon" style="background:var(--peach-light)">🗂️</div>
+          <div class="rcf-info">
+            <div class="rcf-name">Computer Networks — TCP/IP Cheatsheet.pdf</div>
+            <div class="rcf-meta">Uploaded by <strong>Karthik R</strong> · 0.8 MB · 2 months ago</div>
+            <div class="rcf-tags"><span>Networks</span><span>Cheatsheet</span><span>3rd Year</span></div>
+          </div>
+          <div class="rcf-right">
+            <div class="rcf-size">0.8 MB</div>
+            <div class="rcf-downloads">↓ 174 downloads</div>
+            <button class="btn-clay btn-clay--outline btn-sm">↓ Download</button>
+          </div>
+        </div>
+
+        <div class="clay-card res-card-full">
+          <div class="rcf-icon" style="background:var(--mint-light)">📐</div>
+          <div class="rcf-info">
+            <div class="rcf-name">Discrete Mathematics — Complete Formula Sheet.pdf</div>
+            <div class="rcf-meta">Uploaded by <strong>Priya Venkat</strong> · 1.9 MB · 3 months ago</div>
+            <div class="rcf-tags"><span>Maths</span><span>Cheatsheet</span><span>1st Year</span></div>
+          </div>
+          <div class="rcf-right">
+            <div class="rcf-size">1.9 MB</div>
+            <div class="rcf-downloads">↓ 267 downloads</div>
+            <button class="btn-clay btn-clay--sage btn-sm">↓ Download</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand"><a href="{% url 'index' %}" class="logo" style="color:var(--chalk)"><div class="logo-mark">N</div><span>NexusLink</span></a><p>The campus network that turns college into a community.</p></div>
+    <div class="footer-links">
+      <div class="fl-col"><h4>Platform</h4><a href="{% url 'resources' %}">Resource Hub</a><a href="{% url 'chat' %}">Real-time Chat</a><a href="{% url 'rooms' %}">Study Rooms</a><a href="{% url 'connect' %}">Connect Peers</a></div>
+      <div class="fl-col"><h4>Profile</h4><a href="{% url 'profile' %}">My Profile</a><a href="{% url 'profile' %}">GitHub Connect</a><a href="{% url 'profile' %}">Codeforces</a></div>
+      <div class="fl-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 NexusLink.</span><span>Made with ♥ in Tamil Nadu</span></div>
+</footer>
+<script src="{% static 'app.js' %}"></script>
+<script>
+document.querySelectorAll('.filter-chip').forEach(chip=>{
+  chip.addEventListener('click',function(){
+    this.closest('.filter-group').querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body></html>

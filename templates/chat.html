@@ -1,34 +1,1012 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; margin: 0; }
+
+.user-avatar-nav {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  position: relative;
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust);
+  transition: box-shadow 0.2s;
+}
+.user-avatar-nav:hover {
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust);
+}
+.user-avatar-nav img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  background: var(--rust); color: white;
+  font-size: 13px; font-weight: 800;
+  font-family: var(--font-body);
+}
+
+/* ── App Shell ── */
+.app {
+  display: grid;
+  grid-template-rows: 64px 1fr;
+  height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: white;
+  border-bottom: 1.5px solid var(--border);
+  position: relative;
+  z-index: 50;
+  flex-shrink: 0;
+}
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--ink);
+  text-decoration: none;
+}
+.topbar-logo-mark {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--rust);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 900;
+  box-shadow: 3px 3px 0 rgba(193,68,14,0.3);
+}
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.topbar-nav a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.topbar-nav a:hover, .topbar-nav a.active { color: var(--rust); }
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: var(--chalk);
+  border: 1.5px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+}
+.user-av {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--lilac-mid);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+}
+
+/* ── Body ── */
+.chat-body {
+  display: grid;
+  grid-template-columns: 240px 280px 1fr;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Mode Rail ── */
+.mode-rail {
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 4px;
+}
+.mr-btn {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px;
+  border: none; background: transparent;
+  color: rgba(255,255,255,0.45);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  font-family: var(--font-body);
+}
+.mr-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+.mr-btn.active { background: var(--rust); color: white; box-shadow: 3px 3px 0 rgba(193,68,14,0.35); }
+.mr-icon { font-size: 20px; line-height: 1; }
+.mr-label { font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.mr-badge {
+  position: absolute; top: 6px; right: 6px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--mint-mid);
+  color: white;
+  font-size: 8px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--ink);
+}
+.mr-divider { width: 28px; height: 1px; background: rgba(255,255,255,0.1); margin: 6px 0; }
+.mr-spacer { flex: 1; }
+
+/* ── List Panel ── */
+.list-panel {
+  background: white;
+  border-right: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.lp-header {
+  padding: 16px 16px 10px;
+  border-bottom: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.lp-title {
+  font-family: var(--font-display);
+  font-size: 17px; font-weight: 900;
+}
+.lp-search {
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+.lp-search input {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: var(--chalk);
+  font-family: var(--font-body);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.lp-search input:focus { border-color: var(--rust); }
+.lp-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+.lp-tab {
+  flex: 1; padding: 5px 8px;
+  border-radius: 100px;
+  font-size: 10px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s;
+}
+.lp-tab.active { background: var(--rust); color: white; border-color: var(--rust); }
+.lp-list { flex: 1; overflow-y: auto; padding: 6px; }
+
+/* ── DM Item ── */
+.dm-item {
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px; border-radius: 12px;
+  cursor: pointer; transition: background 0.2s;
+  margin-bottom: 2px; position: relative;
+}
+.dm-item:hover { background: var(--chalk-warm); }
+.dm-item.active { background: var(--rust-light); }
+.dm-item.active .dm-name { color: var(--rust); }
+.dm-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: white;
+  flex-shrink: 0; position: relative;
+}
+.dm-online {
+  position: absolute; bottom: 0; right: 0;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--mint-mid); border: 2px solid white;
+}
+.dm-info { flex: 1; min-width: 0; }
+.dm-name { font-weight: 700; font-size: 13px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-last { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.dm-time { font-size: 10px; color: var(--muted); }
+.dm-badge {
+  min-width: 17px; height: 17px; border-radius: 100px;
+  background: var(--rust); color: white;
+  font-size: 9px; font-weight: 800; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Room Item ── */
+.room-item {
+  padding: 12px; border-radius: 12px;
+  cursor: pointer; transition: background 0.2s;
+  margin-bottom: 4px;
+  border: 1.5px solid transparent;
+}
+.room-item:hover { background: var(--chalk-warm); }
+.room-item.active { background: var(--lilac-light); border-color: rgba(124,111,205,0.25); }
+.ri-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.ri-name { font-family: var(--font-display); font-size: 13px; font-weight: 700; }
+.ri-live { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--mint-mid); font-weight: 700; }
+.ri-tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; padding: 2px 7px; border-radius: 100px; }
+.ri-last { font-size: 11px; color: var(--muted); margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ri-members { display: flex; align-items: center; gap: 0; }
+.ri-av { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 800; color: white; margin-right: -4px; }
+.ri-count { font-size: 10px; color: var(--muted); margin-left: 10px; }
+
+/* ── Main Chat ── */
+.main-pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--chalk);
+}
+
+/* ── Chat Header ── */
+.chat-header {
+  padding: 12px 20px;
+  background: white;
+  border-bottom: 1.5px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
+  flex-shrink: 0;
+}
+.ch-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: white; flex-shrink: 0;
+}
+.ch-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.ch-info { flex: 1; }
+.ch-name { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+.ch-sub { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.ch-actions { display: flex; gap: 8px; }
+.ch-btn {
+  width: 33px; height: 33px; border-radius: 9px;
+  border: 1.5px solid var(--border); background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; cursor: pointer; transition: all 0.2s;
+}
+.ch-btn:hover { background: var(--chalk-warm); }
+.ch-btn.danger { border-color: rgba(193,68,14,0.3); }
+.ch-btn.danger:hover { background: var(--rust-light); }
+
+/* ── Messages ── */
+.messages-area {
+  flex: 1; overflow-y: auto;
+  padding: 20px; display: flex; flex-direction: column; gap: 14px;
+}
+.date-sep {
+  text-align: center; font-size: 11px; font-weight: 700;
+  color: var(--muted); letter-spacing: 1px;
+  display: flex; align-items: center; gap: 12px;
+}
+.date-sep::before, .date-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.msg-group { display: flex; gap: 10px; }
+.msg-group.out { flex-direction: row-reverse; }
+.mg-av {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: white;
+  flex-shrink: 0; align-self: flex-end;
+}
+.mg-bubbles { display: flex; flex-direction: column; gap: 2px; max-width: 60%; }
+.msg-group.out .mg-bubbles { align-items: flex-end; }
+.mg-sender { font-size: 10px; font-weight: 700; color: var(--muted); margin-bottom: 2px; }
+.msg-group.out .mg-sender { text-align: right; }
+.mg-bubble {
+  padding: 9px 14px; border-radius: 16px;
+  font-size: 13px; line-height: 1.5;
+}
+.msg-group:not(.out) .mg-bubble {
+  background: white; border-bottom-left-radius: 4px;
+  box-shadow: 2px 2px 0 rgba(44,36,22,0.05);
+}
+.msg-group.out .mg-bubble {
+  background: var(--rust); color: white; border-bottom-right-radius: 4px;
+}
+.mg-time { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.msg-group.out .mg-time { text-align: right; }
+.mg-reactions { display: flex; gap: 4px; margin-top: 3px; }
+.reaction { padding: 2px 7px; border-radius: 100px; font-size: 11px; background: var(--chalk-warm); border: 1px solid var(--border); cursor: pointer; }
+
+/* pinned */
+.pinned {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--yellow-light); border: 1.5px solid rgba(230,184,0,0.3);
+  border-radius: 10px; padding: 10px 14px; font-size: 12px;
+}
+
+/* file bubble */
+.file-bubble {
+  display: flex; align-items: center; gap: 10px;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; max-width: 200px;
+  box-shadow: 2px 2px 0 rgba(44,36,22,0.05);
+  margin-top: 4px;
+}
+.fb-name { font-size: 12px; font-weight: 700; }
+.fb-meta { font-size: 10px; color: var(--muted); }
+.fb-dl { font-size: 11px; color: var(--rust); font-weight: 700; margin-top: 2px; cursor: pointer; }
+
+/* ── Input Bar ── */
+.input-bar {
+  padding: 12px 16px;
+  background: white;
+  border-top: 1.5px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+.input-bar input {
+  flex: 1; padding: 10px 16px; border-radius: 100px;
+  border: 1.5px solid var(--border); background: var(--chalk);
+  font-family: var(--font-body); font-size: 13px; outline: none;
+  transition: border-color 0.2s;
+}
+.input-bar input:focus { border-color: var(--rust); background: white; }
+.ib-btn {
+  width: 34px; height: 34px; border-radius: 9px;
+  border: 1.5px solid var(--border); background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; cursor: pointer; transition: all 0.2s;
+}
+.ib-btn:hover { background: var(--chalk-warm); }
+.send-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--rust); color: white; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(193,68,14,0.3);
+  transition: all 0.2s;
+}
+.send-btn.room { background: var(--lilac-mid); box-shadow: 3px 3px 0 rgba(124,111,205,0.3); }
+.send-btn:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 rgba(193,68,14,0.25); }
+
+/* ── Room sidebar ── */
+.room-body { display: grid; grid-template-columns: 1fr 240px; flex: 1; overflow: hidden; }
+.room-chat-wrap { display: flex; flex-direction: column; overflow: hidden; }
+.room-sidebar {
+  border-left: 1.5px solid var(--border); background: white;
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.rs-section { padding: 14px; border-bottom: 1.5px solid var(--border); }
+.rs-title { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+.rs-member { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.rs-member:last-child { border-bottom: none; }
+.rs-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: white; flex-shrink: 0; position: relative; }
+.rs-dot { position: absolute; bottom: 0; right: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--mint-mid); border: 1.5px solid white; }
+.rs-name { font-size: 12px; font-weight: 700; flex: 1; }
+.rs-role { font-size: 10px; color: var(--muted); }
+.host-tag { font-size: 8px; font-weight: 700; padding: 1px 6px; border-radius: 100px; background: var(--rust-light); color: var(--rust); }
+.rs-resource { display: flex; align-items: center; gap: 8px; padding: 7px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+.rs-resource:hover { background: var(--chalk-warm); }
+
+/* ── Timer ── */
+.timer-display { font-family: var(--font-display); font-size: 32px; font-weight: 900; text-align: center; margin: 6px 0 4px; letter-spacing: -2px; }
+.timer-lbl { font-size: 10px; color: var(--muted); text-align: center; margin-bottom: 10px; }
+.timer-btns { display: flex; gap: 6px; }
+.timer-btn {
+  flex: 1; padding: 6px; border-radius: 100px;
+  border: 1.5px solid var(--border); background: transparent;
+  font-size: 10px; font-weight: 700; cursor: pointer;
+  font-family: var(--font-body); transition: all 0.2s;
+}
+.timer-btn:hover { background: var(--chalk-warm); }
+.timer-btn.start { background: var(--mint-mid); color: white; border-color: var(--mint-mid); }
+
+/* ── Empty / Welcome state ── */
+.empty-pane {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; color: var(--muted);
+  background: var(--chalk);
+}
+.empty-icon { font-size: 52px; opacity: 0.35; }
+.empty-pane h3 { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--ink); }
+.empty-pane p { font-size: 13px; max-width: 260px; text-align: center; line-height: 1.7; }
+
+/* ── Password modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(44,36,22,0.4);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: white; border-radius: 20px; padding: 28px;
+  width: 360px; box-shadow: 8px 8px 0 rgba(44,36,22,0.12);
+  transform: translateY(16px); transition: transform 0.2s;
+}
+.modal-overlay.open .modal-box { transform: translateY(0); }
+.modal-box h3 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 5px; }
+.modal-box p { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+.modal-box input {
+  width: 100%; padding: 10px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--chalk);
+  font-family: var(--font-body); font-size: 13px; outline: none;
+  margin-bottom: 12px;
+}
+.modal-box input:focus { border-color: var(--lilac-mid); }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button { flex: 1; cursor: pointer; }
+
+/* create room modal input */
+.cf-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.cf-input {
+  width: 100%; padding: 9px 12px; border-radius: 9px;
+  border: 1.5px solid var(--border); background: var(--chalk);
+  font-family: var(--font-body); font-size: 13px; color: var(--ink); outline: none;
+  margin-bottom: 12px;
+}
+.cf-input:focus { border-color: var(--lilac-mid); }
+</style>
+</head>
 <body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
 
-<h2>🔥 Real-Time Chat</h2>
+<!-- ═══ PASSWORD MODAL ═══ -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal-box">
+    <h3>🔐 Join Study Room</h3>
+    <p id="pw-desc">Enter the password to join this room.</p>
+    <input type="password" id="pw-input" placeholder="Room password…">
+    <div class="modal-btns">
+      <button class="btn-clay btn-clay--outline" onclick="closeModal('pw-modal')">Cancel</button>
+      <button class="btn-clay btn-clay--lilac" onclick="confirmJoin()">Join Room</button>
+    </div>
+  </div>
+</div>
 
-<input id="msg" type="text">
-<button onclick="sendMsg()">Send</button>
-<a href="/accounts/google/login/">Login with Google</a>
-<ul id="chat"></ul>
+<!-- ═══ CREATE ROOM MODAL ═══ -->
+<div class="modal-overlay" id="cr-modal">
+  <div class="modal-box">
+    <h3>Create a Study Room</h3>
+    <label class="cf-label">Room Name</label>
+    <input class="cf-input" id="cr-name" placeholder="e.g. Graph Theory Marathon">
+    <label class="cf-label">Subject</label>
+    <select class="cf-input" id="cr-subject">
+      <option>DSA</option><option>DBMS</option><option>OS</option>
+      <option>Networks</option><option>Web Dev</option><option>System Design</option><option>Maths</option>
+    </select>
+    <label class="cf-label">Password (optional)</label>
+    <input class="cf-input" type="password" id="cr-pw" placeholder="Leave blank for open room">
+    <div class="modal-btns">
+      <button class="btn-clay btn-clay--outline" onclick="closeModal('cr-modal')">Cancel</button>
+      <button class="btn-clay btn-clay--lilac" onclick="createRoom()">Create</button>
+    </div>
+  </div>
+</div>
 
+<div class="app">
+
+  <!-- ── TOPBAR ── -->
+  <header class="topbar">
+    <a href="{% url 'index' %}" class="topbar-logo">
+      <div class="topbar-logo-mark">N</div>
+      NexusLink
+    </a>
+    <nav class="topbar-nav">
+      <a href="{% url 'index' %}">Home</a>
+      <a href="{% url 'resources' %}">Resources</a>
+      <a href="{% url 'chat' %}" class="active">Chat</a>
+      <a href="{% url 'rooms' %}">Study Rooms</a>
+      <a href="{% url 'connect' %}">Connect</a>
+      <a href="{% url 'profile' %}">Profile</a>
+    </nav>
+    <div class="topbar-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+             <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="background:none;border:none;font-size:13px;font-weight:600;cursor:pointer;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- ── CHAT BODY ── -->
+  <div class="chat-body">
+
+    <!-- ── ICON RAIL ── -->
+    <div class="mode-rail">
+      <button class="mr-btn active" id="btn-dm" onclick="setMode('dm')">
+        <div class="mr-icon">💬</div>
+        <div class="mr-label">DMs</div>
+        <span class="mr-badge">3</span>
+      </button>
+      <button class="mr-btn" id="btn-rooms" onclick="setMode('rooms')">
+        <div class="mr-icon">📚</div>
+        <div class="mr-label">Rooms</div>
+      </button>
+      <div class="mr-divider"></div>
+      <button class="mr-btn" onclick="location.href='{% url 'connect' %}'">
+        <div class="mr-icon">🤝</div>
+        <div class="mr-label">Connect</div>
+      </button>
+      <button class="mr-btn" onclick="location.href='{% url 'resources' %}'">
+        <div class="mr-icon">📁</div>
+        <div class="mr-label">Files</div>
+      </button>
+      <div class="mr-spacer"></div>
+      <button class="mr-btn" onclick="location.href='{% url 'profile' %}'">
+        <div class="mr-icon">👤</div>
+        <div class="mr-label">Profile</div>
+      </button>
+    </div>
+
+    <!-- ── LIST PANEL ── -->
+    <div class="list-panel">
+
+      <!-- DM List -->
+      <div id="dm-list-panel" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+        <div class="lp-header">
+          <span class="lp-title">Messages</span>
+          <span class="pill pill--green" style="font-size:10px;"><span class="blink-dot"></span> 4 online</span>
+        </div>
+        <div class="lp-search"><input placeholder="Search conversations…" oninput="filterList(this,'dm-list')"></div>
+        <div class="lp-tabs">
+          <button class="lp-tab active" onclick="tabActive(this)">All</button>
+          <button class="lp-tab" onclick="tabActive(this)">Seniors</button>
+          <button class="lp-tab" onclick="tabActive(this)">Juniors</button>
+        </div>
+        <div class="lp-list" id="dm-list">
+          <div class="dm-item active" onclick="openDM(this,'Ravi Kumar','RK','var(--rust)')">
+            <div class="dm-av" style="background:var(--rust)">RK<div class="dm-online"></div></div>
+            <div class="dm-info"><div class="dm-name">Ravi Kumar</div><div class="dm-last">Check the DSA PDF I uploaded!</div></div>
+            <div class="dm-meta"><div class="dm-time">2:45 PM</div><div class="dm-badge">2</div></div>
+          </div>
+          <div class="dm-item" onclick="openDM(this,'Anjali Kumar','AK','var(--rust)')">
+            <div class="dm-av" style="background:var(--rust)">AK</div>
+            <div class="dm-info"><div class="dm-name">Anjali Kumar</div><div class="dm-last">Sure, let's connect tomorrow!</div></div>
+            <div class="dm-meta"><div class="dm-time">Yesterday</div></div>
+          </div>
+          <div class="dm-item" onclick="openDM(this,'Mohammed Saleem','MS','var(--mint-mid)')">
+            <div class="dm-av" style="background:var(--mint-mid)">MS<div class="dm-online"></div></div>
+            <div class="dm-info"><div class="dm-name">Mohammed Saleem</div><div class="dm-last">System design is all about trade-offs 🔥</div></div>
+            <div class="dm-meta"><div class="dm-time">Monday</div></div>
+          </div>
+          <div class="dm-item" onclick="openDM(this,'Priya Venkat','PV','var(--lilac-mid)')">
+            <div class="dm-av" style="background:var(--lilac-mid)">PV<div class="dm-online"></div></div>
+            <div class="dm-info"><div class="dm-name">Priya Venkat</div><div class="dm-last">Are you joining the room tonight?</div></div>
+            <div class="dm-meta"><div class="dm-time">Sunday</div><div class="dm-badge">1</div></div>
+          </div>
+          <div class="dm-item" onclick="openDM(this,'Divya S','DS','var(--peach-mid)')">
+            <div class="dm-av" style="background:var(--peach-mid)">DS</div>
+            <div class="dm-info"><div class="dm-name">Divya S</div><div class="dm-last">OS PYQ set is uploaded 📋</div></div>
+            <div class="dm-meta"><div class="dm-time">Last week</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rooms List -->
+      <div id="rooms-list-panel" style="display:none;flex-direction:column;height:100%;overflow:hidden;">
+        <div class="lp-header">
+          <span class="lp-title">Study Rooms</span>
+          <button class="btn-clay btn-clay--lilac btn-sm" onclick="openModal('cr-modal')">+ Create</button>
+        </div>
+        <div class="lp-search"><input placeholder="Search rooms…" oninput="filterList(this,'rooms-list')"></div>
+        <div class="lp-tabs">
+          <button class="lp-tab active" onclick="tabActive(this)">All</button>
+          <button class="lp-tab" onclick="tabActive(this)">My Rooms</button>
+          <button class="lp-tab" onclick="tabActive(this)">Open</button>
+        </div>
+        <div class="lp-list" id="rooms-list">
+          <div class="room-item active" onclick="openRoom(this,'Graph Theory Marathon','DSA','🧮','var(--rust-light)','var(--rust)','dsa','7 studying')">
+            <div class="ri-top"><div class="ri-name">Graph Theory Marathon</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
+            <span class="ri-tag" style="background:var(--rust-light);color:var(--rust)">DSA</span>
+            <div class="ri-last">Anjali: Let's do Dijkstra next 🔥</div>
+            <div class="ri-members">
+              <div class="ri-av" style="background:var(--rust)">A</div>
+              <div class="ri-av" style="background:var(--mint-mid)">P</div>
+              <div class="ri-av" style="background:var(--lilac-mid)">M</div>
+              <span class="ri-count">7 studying</span>
+            </div>
+          </div>
+          <div class="room-item" onclick="askJoin(this,'Django Channels Deep Dive')">
+            <div class="ri-top"><div class="ri-name">Django Channels Deep Dive</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
+            <span class="ri-tag" style="background:var(--mint-light);color:var(--sage)">Web Dev</span>
+            <div class="ri-last">Priya: WebSockets are so cool!</div>
+            <div class="ri-members">
+              <div class="ri-av" style="background:var(--lilac-mid)">P</div>
+              <div class="ri-av" style="background:var(--yellow-mid)">K</div>
+              <span class="ri-count">3 studying</span>
+            </div>
+          </div>
+          <div class="room-item" onclick="askJoin(this,'SQL & Normalization Prep')">
+            <div class="ri-top"><div class="ri-name">SQL & Normalization Prep</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
+            <span class="ri-tag" style="background:var(--lilac-light);color:var(--lilac-mid)">DBMS</span>
+            <div class="ri-last">Karthik: Try this query 👇</div>
+            <div class="ri-members">
+              <div class="ri-av" style="background:var(--yellow-mid)">K</div>
+              <div class="ri-av" style="background:var(--rust)">S</div>
+              <div class="ri-av" style="background:var(--mint-mid)">A</div>
+              <span class="ri-count">9 studying</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end list-panel -->
+
+    <!-- ── MAIN PANE ── -->
+    <div class="main-pane" id="main-pane">
+
+      <!-- Default DM view: Ravi Kumar -->
+      <div id="view-dm" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+        <div class="chat-header">
+          <div class="ch-av" id="dm-hdr-av" style="background:var(--rust)">RK</div>
+          <div class="ch-info">
+            <div class="ch-name" id="dm-hdr-name">Ravi Kumar</div>
+            <div class="ch-sub"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Online · Google SWE Intern</div>
+          </div>
+          <div class="ch-actions">
+            <button class="ch-btn" title="Voice call">📞</button>
+            <button class="ch-btn" title="Video call">📹</button>
+            <button class="ch-btn" title="Share file">📎</button>
+          </div>
+        </div>
+        <div class="messages-area" id="dm-messages">
+          <div class="date-sep">Today</div>
+          <div class="msg-group">
+            <div class="mg-av" style="background:var(--rust)">RK</div>
+            <div class="mg-bubbles">
+              <div class="mg-sender">Ravi Kumar</div>
+              <div class="mg-bubble">Hey! Saw your follow request. Happy to help with DSA prep 👋</div>
+              <div class="mg-time">2:41 PM</div>
+            </div>
+          </div>
+          <div class="msg-group out">
+            <div class="mg-av" style="background:var(--lilac-mid)">Me</div>
+            <div class="mg-bubbles">
+              <div class="mg-sender">You</div>
+              <div class="mg-bubble">Thanks! Any tips for graph problems?</div>
+              <div class="mg-time">2:42 PM</div>
+            </div>
+          </div>
+          <div class="msg-group">
+            <div class="mg-av" style="background:var(--rust)">RK</div>
+            <div class="mg-bubbles">
+              <div class="mg-sender">Ravi Kumar</div>
+              <div class="mg-bubble">Start with BFS/DFS patterns — they cover 80% of graph problems.</div>
+              <div class="mg-bubble">Also check this 👇</div>
+              <div class="file-bubble">
+                <span style="font-size:24px">📄</span>
+                <div><div class="fb-name">DSA Advanced 2024.pdf</div><div class="fb-meta">2.4 MB · PDF</div><div class="fb-dl">↓ Download</div></div>
+              </div>
+              <div class="mg-time">2:44 PM</div>
+            </div>
+          </div>
+          <div class="msg-group out">
+            <div class="mg-av" style="background:var(--lilac-mid)">Me</div>
+            <div class="mg-bubbles">
+              <div class="mg-sender">You</div>
+              <div class="mg-bubble">Found it! Downloading now 🎉 Thanks Ravi!</div>
+              <div class="mg-reactions"><span class="reaction">❤️ 1</span></div>
+              <div class="mg-time">2:45 PM</div>
+            </div>
+          </div>
+        </div>
+        <div class="input-bar">
+          <button class="ib-btn">😊</button>
+          <button class="ib-btn">📎</button>
+          <input id="dm-input" placeholder="Message Ravi Kumar…" onkeydown="if(event.key==='Enter')sendDM()">
+          <button class="send-btn" onclick="sendDM()">➤</button>
+        </div>
+      </div>
+
+      <!-- Study Room view (hidden initially) -->
+      <div id="view-room" style="display:none;flex-direction:column;height:100%;overflow:hidden;">
+        <div class="chat-header">
+          <div class="ch-icon" id="room-hdr-icon" style="background:var(--rust-light)">🧮</div>
+          <div class="ch-info">
+            <div class="ch-name" id="room-hdr-name">Graph Theory Marathon</div>
+            <div class="ch-sub">
+              <span id="room-hdr-tag" style="font-weight:700;color:var(--rust)">DSA</span>
+              <span>·</span>
+              <span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span>
+              <span id="room-hdr-count">7 members studying</span>
+              <span>· Hosted by Anjali Kumar</span>
+            </div>
+          </div>
+          <div class="ch-actions">
+            <button class="ch-btn">📌 Pin</button>
+            <button class="ch-btn">📎 File</button>
+            <button class="ch-btn danger" onclick="leaveRoom()">✕ Leave</button>
+          </div>
+        </div>
+        <div class="room-body">
+          <div class="room-chat-wrap">
+            <div class="messages-area" id="room-messages">
+              <div class="pinned">📌 <span><strong>Pinned:</strong> Tonight's agenda — BFS patterns → Dijkstra → practice problems. Bring your IDE!</span></div>
+              <div class="date-sep">Today · 8:00 PM</div>
+              <div class="msg-group">
+                <div class="mg-av" style="background:var(--rust)">A</div>
+                <div class="mg-bubbles">
+                  <div class="mg-sender">Anjali Kumar <span style="background:var(--rust-light);color:var(--rust);font-size:8px;padding:1px 5px;border-radius:100px;font-weight:700;margin-left:4px;">host</span></div>
+                  <div class="mg-bubble">Welcome everyone! Let's start with BFS — does everyone have the problem sheet? 🚀</div>
+                  <div class="mg-time">8:01 PM</div>
+                </div>
+              </div>
+              <div class="msg-group">
+                <div class="mg-av" style="background:var(--mint-mid)">P</div>
+                <div class="mg-bubbles">
+                  <div class="mg-sender">Priya Venkat</div>
+                  <div class="mg-bubble">Yes! Starting with LC 102 — Binary Tree Level Order Traversal</div>
+                  <div class="mg-time">8:02 PM</div>
+                </div>
+              </div>
+              <div class="msg-group">
+                <div class="mg-av" style="background:var(--lilac-mid)">M</div>
+                <div class="mg-bubbles">
+                  <div class="mg-sender">Mohammed Saleem</div>
+                  <div class="mg-bubble">BFS is essentially queue + visited set. Once you see that, every graph problem feels the same 🧠</div>
+                  <div class="mg-reactions"><span class="reaction">🔥 4</span><span class="reaction">✅ 3</span></div>
+                  <div class="mg-time">8:04 PM</div>
+                </div>
+              </div>
+              <div class="msg-group out">
+                <div class="mg-av" style="background:var(--lilac-mid)">Me</div>
+                <div class="mg-bubbles">
+                  <div class="mg-sender">You</div>
+                  <div class="mg-bubble">Trying problem 200 — Number of Islands now 🏝️</div>
+                  <div class="mg-time">8:06 PM</div>
+                </div>
+              </div>
+            </div>
+            <div class="input-bar">
+              <button class="ib-btn">😊</button>
+              <button class="ib-btn">📎</button>
+              <input id="room-input" placeholder="Message the study room…" onkeydown="if(event.key==='Enter')sendRoom()">
+              <button class="send-btn room" onclick="sendRoom()">➤</button>
+            </div>
+          </div>
+          <!-- Room Sidebar -->
+          <div class="room-sidebar">
+            <div class="rs-section">
+              <div class="rs-title">Focus Timer</div>
+              <div class="timer-display" id="timer">25:00</div>
+              <div class="timer-lbl" id="timer-lbl">Pomodoro · Focus</div>
+              <div class="timer-btns">
+                <button class="timer-btn start" onclick="toggleTimer(this)">▶ Start</button>
+                <button class="timer-btn" onclick="resetTimer()">↺ Reset</button>
+              </div>
+            </div>
+            <div class="rs-section">
+              <div class="rs-title">Members · 7</div>
+              <div class="rs-member"><div class="rs-av" style="background:var(--rust)">A<div class="rs-dot"></div></div><div><div class="rs-name">Anjali Kumar</div><div class="rs-role">Google · SWE Intern</div></div><span class="host-tag">host</span></div>
+              <div class="rs-member"><div class="rs-av" style="background:var(--mint-mid)">P<div class="rs-dot"></div></div><div><div class="rs-name">Priya Venkat</div><div class="rs-role">CSE · PSG Tech</div></div></div>
+              <div class="rs-member"><div class="rs-av" style="background:var(--lilac-mid)">M<div class="rs-dot"></div></div><div><div class="rs-name">Mohammed Saleem</div><div class="rs-role">Amazon · SDE I</div></div></div>
+              <div class="rs-member"><div class="rs-av" style="background:var(--yellow-mid)">K<div class="rs-dot"></div></div><div><div class="rs-name">Karthik R</div><div class="rs-role">IT · Anna Univ</div></div></div>
+              <div class="rs-member"><div class="rs-av" style="background:var(--lilac-mid)">Me<div class="rs-dot"></div></div><div><div class="rs-name">You</div><div class="rs-role">CSE · PSG Tech</div></div></div>
+            </div>
+            <div class="rs-section">
+              <div class="rs-title">Shared Files</div>
+              <div class="rs-resource">📄 <div><div style="font-size:11px;font-weight:700;">DSA Advanced 2024.pdf</div><div style="font-size:10px;color:var(--muted);">By Anjali · 2.4 MB</div></div></div>
+              <div class="rs-resource">📊 <div><div style="font-size:11px;font-weight:700;">Graph Problems Sheet.pdf</div><div style="font-size:10px;color:var(--muted);">By Anjali · 1.1 MB</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end main-pane -->
+  </div><!-- end chat-body -->
+</div><!-- end app -->
+
+<script src="{% static 'app.js' %}"></script>
 <script>
-const socket = new WebSocket("ws://127.0.0.1:8000/ws/chat/");
+/* ── Mode toggle ── */
+function setMode(mode) {
+  const isDM = mode === 'dm';
+  document.getElementById('dm-list-panel').style.display    = isDM ? 'flex' : 'none';
+  document.getElementById('rooms-list-panel').style.display = isDM ? 'none'  : 'flex';
+  document.getElementById('btn-dm').classList.toggle('active', isDM);
+  document.getElementById('btn-rooms').classList.toggle('active', !isDM);
+  if (isDM) {
+    document.getElementById('view-dm').style.display = 'flex';
+    document.getElementById('view-room').style.display = 'none';
+  } else {
+    document.getElementById('view-room').style.display = 'flex';
+    document.getElementById('view-dm').style.display = 'none';
+  }
+}
 
-socket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
+/* ── Open DM ── */
+function openDM(el, name, initials, bg) {
+  document.querySelectorAll('.dm-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  el.querySelector('.dm-badge')?.remove();
+  document.getElementById('dm-hdr-av').textContent = initials;
+  document.getElementById('dm-hdr-av').style.background = bg.replace(/var\(/, '').replace(/\)/, '');
+  document.getElementById('dm-hdr-av').setAttribute('style', `background:${bg}`);
+  document.getElementById('dm-hdr-name').textContent = name;
+  document.getElementById('dm-input').placeholder = `Message ${name.split(' ')[0]}…`;
+  document.getElementById('view-dm').style.display = 'flex';
+  document.getElementById('view-room').style.display = 'none';
+}
 
-    const li = document.createElement("li");
-    li.textContent = data.message;
+/* ── Send DM ── */
+function sendDM() {
+  const inp = document.getElementById('dm-input');
+  const txt = inp.value.trim(); if (!txt) return;
+  addMsg('dm-messages', txt, 'var(--lilac-mid)', 'Me'); inp.value='';
+}
 
-    document.getElementById("chat").appendChild(li);
-};
+/* ── Open Room (no password) ── */
+function openRoom(el, name, tag, icon, iconBg, tagColor, id, count) {
+  document.querySelectorAll('.room-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('room-hdr-name').textContent = name;
+  document.getElementById('room-hdr-tag').textContent  = tag;
+  document.getElementById('room-hdr-tag').style.color  = tagColor;
+  document.getElementById('room-hdr-icon').textContent = icon;
+  document.getElementById('room-hdr-icon').style.background = iconBg;
+  document.getElementById('room-hdr-count').textContent = count + ' members studying';
+  setMode('rooms');
+}
 
-function sendMsg() {
-    const message = document.getElementById("msg").value;
+/* ── Ask password ── */
+let pendingRoomEl = null, pendingRoomName = '';
+function askJoin(el, name) {
+  pendingRoomEl = el; pendingRoomName = name;
+  document.getElementById('pw-desc').innerHTML = `Enter the password to join <strong>${name}</strong>`;
+  openModal('pw-modal');
+  setTimeout(()=>document.getElementById('pw-input').focus(), 200);
+}
+function confirmJoin() {
+  const pw = document.getElementById('pw-input').value.trim();
+  if (!pw) { document.getElementById('pw-input').focus(); return; }
+  closeModal('pw-modal');
+  document.getElementById('pw-input').value = '';
+  if (!pendingRoomEl) return;
+  document.querySelectorAll('.room-item').forEach(i=>i.classList.remove('active'));
+  pendingRoomEl.classList.add('active');
+  document.getElementById('room-hdr-name').textContent = pendingRoomName;
+  setMode('rooms');
+  document.getElementById('view-room').style.display = 'flex';
+  document.getElementById('view-dm').style.display = 'none';
+  addRoomSys(`You joined ${pendingRoomName} 🎓`);
+}
 
-    socket.send(JSON.stringify({
-        "message": message
-    }));
+/* ── Leave Room ── */
+function leaveRoom() {
+  setMode('dm');
+  document.getElementById('view-dm').style.display = 'flex';
+  document.getElementById('view-room').style.display = 'none';
+}
+
+/* ── Send room msg ── */
+function sendRoom() {
+  const inp = document.getElementById('room-input');
+  const txt = inp.value.trim(); if (!txt) return;
+  addMsg('room-messages', txt, 'var(--lilac-mid)', 'Me'); inp.value='';
+}
+
+/* ── Create Room ── */
+function createRoom() {
+  const name = document.getElementById('cr-name').value.trim();
+  if (!name) { document.getElementById('cr-name').focus(); return; }
+  const sub  = document.getElementById('cr-subject').value;
+  closeModal('cr-modal');
+  const list = document.getElementById('rooms-list');
+  const el   = document.createElement('div');
+  el.className = 'room-item';
+  el.innerHTML = `<div class="ri-top"><div class="ri-name">${esc(name)}</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
+    <span class="ri-tag" style="background:var(--mint-light);color:var(--sage)">${sub}</span>
+    <div class="ri-last">You created this room</div>
+    <div class="ri-members"><div class="ri-av" style="background:var(--lilac-mid)">Me</div><span class="ri-count">1 studying</span></div>`;
+  el.onclick = () => openRoom(el, name, sub, '📝', 'var(--mint-light)', 'var(--sage)', 'new', '1');
+  list.insertBefore(el, list.firstChild);
+  openRoom(el, name, sub, '📝', 'var(--mint-light)', 'var(--sage)', 'new', '1');
+  addRoomSys(`Room "${name}" created! 🔐`);
+  document.getElementById('cr-name').value=''; document.getElementById('cr-pw').value='';
+}
+
+/* ── Helpers ── */
+function addMsg(cid, text, color, name) {
+  const c = document.getElementById(cid);
+  const d = document.createElement('div');
+  d.className = 'msg-group out';
+  d.innerHTML = `<div class="mg-av" style="background:${color}">${name.substring(0,2)}</div>
+    <div class="mg-bubbles"><div class="mg-sender">${name}</div><div class="mg-bubble">${esc(text)}</div><div class="mg-time">Just now</div></div>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+function addRoomSys(txt) {
+  const c = document.getElementById('room-messages');
+  const d = document.createElement('div');
+  d.className='date-sep'; d.textContent=txt;
+  c.appendChild(d); c.scrollTop=c.scrollHeight;
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function tabActive(el){
+  el.closest('.lp-tabs').querySelectorAll('.lp-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+function filterList(inp, listId){
+  const q = inp.value.toLowerCase();
+  document.getElementById(listId).querySelectorAll('.dm-item,.room-item').forEach(el=>{
+    el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+/* ── Close modal on backdrop ── */
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+document.getElementById('pw-input').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmJoin(); });
+
+/* ── Pomodoro Timer ── */
+let secs=25*60, running=false, interval=null;
+function toggleTimer(btn){
+  running = !running;
+  if(running){
+    btn.textContent='⏸ Pause';
+    interval=setInterval(()=>{
+      if(secs<=0){ clearInterval(interval); running=false; btn.textContent='▶ Start'; document.getElementById('timer-lbl').textContent='✓ Break time!'; return; }
+      secs--; updateTimer();
+    },1000);
+  } else { clearInterval(interval); btn.textContent='▶ Start'; }
+}
+function resetTimer(){
+  clearInterval(interval); running=false; secs=25*60; updateTimer();
+  document.querySelector('.timer-btn.start').textContent='▶ Start';
+  document.getElementById('timer-lbl').textContent='Pomodoro · Focus';
+}
+function updateTimer(){
+  const m=String(Math.floor(secs/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');
+  document.getElementById('timer').textContent=`${m}:${s}`;
 }
 </script>
-
 </body>
 </html>

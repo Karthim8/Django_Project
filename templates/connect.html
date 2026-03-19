@@ -1,0 +1,281 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect Peers — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+
+<style>
+.user-avatar-nav {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  position: relative;
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust);
+  transition: box-shadow 0.2s;
+}
+.user-avatar-nav:hover {
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust);
+}
+.user-avatar-nav img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  background: var(--rust); color: white;
+  font-size: 13px; font-weight: 800;
+  font-family: var(--font-body);
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}" class="active">Connect</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-inner reveal">
+    <p class="eyebrow">Connect Peers</p>
+    <h1>Find your<br><em>people.</em></h1>
+    <p>Search seniors by company, skill, or branch. Send a follow request — once they approve, your chat unlocks. Zero cold spam, only warm connections.</p>
+  </div>
+  <div class="page-hero-num">🤝</div>
+</div>
+
+<div class="page-body">
+  <div class="connect-layout">
+
+    <!-- MAIN -->
+    <div class="connect-main">
+      <div class="connect-toolbar reveal">
+        <div class="connect-search">
+          <span>🔍</span>
+          <input type="text" placeholder="Search by name, skill, or company…">
+        </div>
+        <div class="connect-filters">
+          <button class="cf-pill active">All</button>
+          <button class="cf-pill">Seniors</button>
+          <button class="cf-pill">Juniors</button>
+          <button class="cf-pill">Placed</button>
+          <button class="cf-pill">CSE</button>
+          <button class="cf-pill">IT</button>
+        </div>
+      </div>
+
+      <div class="peers-grid">
+        <div class="clay-card peer-card reveal">
+          <div class="peer-top">
+            <div class="peer-av" style="background:var(--rust-light);color:var(--rust)">AK</div>
+            <div style="flex:1">
+              <div class="peer-name">Anjali Kumar</div>
+              <div class="peer-meta">CSE · Anna University · Senior 2024</div>
+              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--rust" style="font-size:9px">Senior</span><span class="pill pill--green" style="font-size:9px">● Online</span></div>
+            </div>
+          </div>
+          <div class="peer-company"><span>🌿</span><div class="peer-company-name">Google</div><div class="peer-company-role">SWE Intern</div></div>
+          <div class="peer-stats">
+            <div class="ps-item"><div class="ps-num">24</div><div class="ps-lbl">Projects</div></div>
+            <div class="ps-item"><div class="ps-num">812</div><div class="ps-lbl">CF Solved</div></div>
+            <div class="ps-item"><div class="ps-num">1847</div><div class="ps-lbl">CF Rating</div></div>
+          </div>
+          <div class="peer-skills"><span class="skill-tag">Python</span><span class="skill-tag">ML</span><span class="skill-tag">React</span><span class="skill-tag">DSA</span></div>
+          <div class="peer-actions" style="margin-top:16px">
+            <button class="btn-clay btn-clay--rust follow-btn" onclick="followPeer(this)">Follow</button>
+            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
+          </div>
+        </div>
+
+        <div class="clay-card peer-card reveal">
+          <div class="peer-top">
+            <div class="peer-av" style="background:var(--mint-light);color:var(--sage)">MS</div>
+            <div style="flex:1">
+              <div class="peer-name">Mohammed Saleem</div>
+              <div class="peer-meta">IT · MIT Chennai · Senior 2023</div>
+              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--rust" style="font-size:9px">Senior</span><span class="pill pill--green" style="font-size:9px">● Online</span></div>
+            </div>
+          </div>
+          <div class="peer-company"><span>🔶</span><div class="peer-company-name">Amazon</div><div class="peer-company-role">SDE I</div></div>
+          <div class="peer-stats">
+            <div class="ps-item"><div class="ps-num">18</div><div class="ps-lbl">Projects</div></div>
+            <div class="ps-item"><div class="ps-num">1.2k</div><div class="ps-lbl">CF Solved</div></div>
+            <div class="ps-item"><div class="ps-num">2104</div><div class="ps-lbl">CF Rating</div></div>
+          </div>
+          <div class="peer-skills"><span class="skill-tag">Java</span><span class="skill-tag">Spring</span><span class="skill-tag">AWS</span><span class="skill-tag">System Design</span></div>
+          <div class="peer-actions" style="margin-top:16px">
+            <button class="btn-clay btn-clay--sage follow-btn" onclick="followPeer(this)">Follow</button>
+            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
+          </div>
+        </div>
+
+        <div class="clay-card peer-card reveal">
+          <div class="peer-top">
+            <div class="peer-av" style="background:var(--lilac-light);color:var(--lilac-mid)">PV</div>
+            <div style="flex:1">
+              <div class="peer-name">Priya Venkat</div>
+              <div class="peer-meta">CSE · PSG Tech · Junior 2026</div>
+              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--lilac" style="font-size:9px">Junior</span><span class="pill pill--green" style="font-size:9px">● Online</span></div>
+            </div>
+          </div>
+          <div class="peer-company" style="background:var(--linen)"><span>🎯</span><div class="peer-company-name">Seeking Roles</div><div class="peer-company-role">SWE · Full Stack</div></div>
+          <div class="peer-stats">
+            <div class="ps-item"><div class="ps-num">9</div><div class="ps-lbl">Projects</div></div>
+            <div class="ps-item"><div class="ps-num">340</div><div class="ps-lbl">CF Solved</div></div>
+            <div class="ps-item"><div class="ps-num">1420</div><div class="ps-lbl">CF Rating</div></div>
+          </div>
+          <div class="peer-skills"><span class="skill-tag">C++</span><span class="skill-tag">Django</span><span class="skill-tag">WebSockets</span></div>
+          <div class="peer-actions" style="margin-top:16px">
+            <button class="btn-clay btn-clay--lilac follow-btn" onclick="followPeer(this)">Follow</button>
+            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
+          </div>
+        </div>
+
+        <div class="clay-card peer-card reveal">
+          <div class="peer-top">
+            <div class="peer-av" style="background:var(--yellow-light);color:#9a6f00">KR</div>
+            <div style="flex:1">
+              <div class="peer-name">Karthik R</div>
+              <div class="peer-meta">IT · Anna University · Senior 2024</div>
+              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--rust" style="font-size:9px">Senior</span></div>
+            </div>
+          </div>
+          <div class="peer-company"><span>⬛</span><div class="peer-company-name">Microsoft</div><div class="peer-company-role">SWE II</div></div>
+          <div class="peer-stats">
+            <div class="ps-item"><div class="ps-num">31</div><div class="ps-lbl">Projects</div></div>
+            <div class="ps-item"><div class="ps-num">940</div><div class="ps-lbl">CF Solved</div></div>
+            <div class="ps-item"><div class="ps-num">1980</div><div class="ps-lbl">CF Rating</div></div>
+          </div>
+          <div class="peer-skills"><span class="skill-tag">C#</span><span class="skill-tag">.NET</span><span class="skill-tag">Azure</span><span class="skill-tag">DSA</span></div>
+          <div class="peer-actions" style="margin-top:16px">
+            <button class="btn-clay btn-clay--rust follow-btn" onclick="followPeer(this)">Follow</button>
+            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="connect-sidebar">
+      <!-- Pending requests -->
+      <div class="clay-card pending-card reveal">
+        <h4>Pending requests <span style="background:var(--rust);color:white;font-size:10px;padding:2px 7px;border-radius:100px;margin-left:6px">2</span></h4>
+        <div class="pending-item">
+          <div class="pi-av" style="background:var(--rust)">RK</div>
+          <div class="pi-info"><div class="pi-name">Ravi Kumar</div><div class="pi-meta">Google · SWE · wants to follow you</div></div>
+          <div class="pi-actions">
+            <button class="pi-accept" title="Accept">✓</button>
+            <button class="pi-decline" title="Decline">✕</button>
+          </div>
+        </div>
+        <div class="pending-item">
+          <div class="pi-av" style="background:var(--lilac-mid)">DS</div>
+          <div class="pi-info"><div class="pi-name">Divya S</div><div class="pi-meta">NIT Trichy · CSE · wants to follow you</div></div>
+          <div class="pi-actions">
+            <button class="pi-accept" title="Accept">✓</button>
+            <button class="pi-decline" title="Decline">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggestions -->
+      <div class="clay-card suggest-card reveal">
+        <h4>Suggested for you</h4>
+        <div class="suggest-item">
+          <div class="pi-av" style="background:var(--peach-mid)">NR</div>
+          <div class="pi-info"><div class="pi-name">Nithya R</div><div class="pi-meta">Flipkart · SDE · CSE batch 2023</div></div>
+          <button class="btn-clay btn-clay--outline btn-sm" onclick="followPeer(this)">Follow</button>
+        </div>
+        <div class="suggest-item">
+          <div class="pi-av" style="background:var(--mint-mid)">VS</div>
+          <div class="pi-info"><div class="pi-name">Vikram S</div><div class="pi-meta">Zoho · SWE · IT batch 2023</div></div>
+          <button class="btn-clay btn-clay--outline btn-sm" onclick="followPeer(this)">Follow</button>
+        </div>
+        <div class="suggest-item">
+          <div class="pi-av" style="background:var(--yellow-mid)">ML</div>
+          <div class="pi-info"><div class="pi-name">Meena L</div><div class="pi-meta">TCS iON · ML Engg · CSE 2022</div></div>
+          <button class="btn-clay btn-clay--outline btn-sm" onclick="followPeer(this)">Follow</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="clay-card reveal" style="padding:20px">
+        <h4 style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:14px">Your network</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:var(--chalk-warm);border-radius:10px;padding:12px;text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:900">12</div><div style="font-size:11px;color:var(--muted)">Following</div></div>
+          <div style="background:var(--chalk-warm);border-radius:10px;padding:12px;text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:900">8</div><div style="font-size:11px;color:var(--muted)">Followers</div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand"><a href="{% url 'index' %}" class="logo" style="color:var(--chalk)"><div class="logo-mark">N</div><span>NexusLink</span></a><p>The campus network that turns college into a community.</p></div>
+    <div class="footer-links">
+      <div class="fl-col"><h4>Platform</h4><a href="{% url 'resources' %}">Resource Hub</a><a href="{% url 'chat' %}">Real-time Chat</a><a href="{% url 'rooms' %}">Study Rooms</a><a href="{% url 'connect' %}">Connect Peers</a></div>
+      <div class="fl-col"><h4>Profile</h4><a href="{% url 'profile' %}">My Profile</a><a href="{% url 'profile' %}">GitHub Connect</a><a href="{% url 'profile' %}">Codeforces</a></div>
+      <div class="fl-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 NexusLink.</span><span>Made with ♥ in Tamil Nadu</span></div>
+</footer>
+<script src="{% static 'app.js' %}"></script>
+<script>
+function followPeer(btn){
+  btn.textContent = btn.textContent==='Follow' ? '✓ Requested' : 'Follow';
+  btn.classList.toggle('requested');
+}
+document.querySelectorAll('.cf-pill').forEach(p=>{
+  p.addEventListener('click',function(){
+    document.querySelectorAll('.cf-pill').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+document.querySelectorAll('.pi-accept').forEach(b=>{
+  b.addEventListener('click',function(){this.closest('.pending-item').style.opacity='0.4';this.closest('.pending-item').style.pointerEvents='none';});
+});
+document.querySelectorAll('.pi-decline').forEach(b=>{
+  b.addEventListener('click',function(){this.closest('.pending-item').remove();});
+});
+</script>
+</body></html>

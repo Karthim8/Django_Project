@@ -1,0 +1,241 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Rooms — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+
+<style>
+.user-avatar-nav {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  position: relative;
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust);
+  transition: box-shadow 0.2s;
+}
+.user-avatar-nav:hover {
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust);
+}
+.user-avatar-nav img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  background: var(--rust); color: white;
+  font-size: 13px; font-weight: 800;
+  font-family: var(--font-body);
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'rooms' %}" class="active">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-inner reveal">
+    <p class="eyebrow">Study Rooms</p>
+    <h1>Lock in<br><em>together.</em></h1>
+    <p>Password-protected rooms for focused group study. Create one in 10 seconds, invite your group, and study without distractions.</p>
+    <div class="page-hero-actions">
+      <button class="btn-clay btn-clay--rust btn-clay--lg" onclick="document.getElementById('create-section').scrollIntoView({behavior:'smooth'})">Create a room</button>
+      <button class="btn-clay btn-clay--outline btn-clay--lg">Browse rooms</button>
+    </div>
+  </div>
+  <div class="page-hero-num">🔐</div>
+</div>
+
+<div class="page-body">
+  <div class="rooms-page-layout">
+
+    <!-- MAIN -->
+    <div class="rooms-main">
+      <div class="rooms-toolbar reveal">
+        <h2>Active Rooms <span style="font-size:14px;color:var(--muted);font-weight:400">(12 live)</span></h2>
+        <div class="rooms-filter-tabs">
+          <button class="rft active" onclick="filterRooms(this,'all')">All</button>
+          <button class="rft" onclick="filterRooms(this,'dsa')">DSA</button>
+          <button class="rft" onclick="filterRooms(this,'webdev')">Web Dev</button>
+          <button class="rft" onclick="filterRooms(this,'dbms')">DBMS</button>
+          <button class="rft" onclick="filterRooms(this,'os')">OS</button>
+        </div>
+      </div>
+
+      <div class="rooms-page-grid">
+        <div class="clay-card room-page-card reveal">
+          <div class="rpc-top">
+            <span class="rpc-subject-pill" style="background:var(--rust-light);color:var(--rust)">DSA</span>
+            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
+          </div>
+          <div class="rpc-name">Graph Theory Marathon</div>
+          <div class="rpc-desc">Deep dive into BFS, DFS, Dijkstra, and Bellman-Ford. Interview-focused with problem solving.</div>
+          <div class="rpc-host-row">
+            <div class="rpc-host-av" style="background:var(--rust)">A</div>
+            <div><div class="rpc-host-name">Anjali Kumar</div><div class="rpc-host-role">Google SWE Intern</div></div>
+          </div>
+          <div class="rpc-members-row">
+            <div class="ra" style="background:var(--rust)">A</div>
+            <div class="ra" style="background:var(--mint-mid)">P</div>
+            <div class="ra" style="background:var(--lilac-mid)">M</div>
+            <div class="ra" style="background:var(--yellow-mid)">K</div>
+            <span class="rpc-count-lbl">+4 studying now</span>
+          </div>
+          <div class="rpc-footer">
+            <button class="btn-clay btn-clay--rust" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
+            <div class="rpc-info">🕐 Started 40 min ago</div>
+          </div>
+        </div>
+
+        <div class="clay-card room-page-card reveal">
+          <div class="rpc-top">
+            <span class="rpc-subject-pill" style="background:var(--mint-light);color:var(--sage)">Web Dev</span>
+            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
+          </div>
+          <div class="rpc-name">Django Channels Deep Dive</div>
+          <div class="rpc-desc">Building real-time features with Django Channels and WebSockets from scratch.</div>
+          <div class="rpc-host-row">
+            <div class="rpc-host-av" style="background:var(--lilac-mid)">P</div>
+            <div><div class="rpc-host-name">Priya Venkat</div><div class="rpc-host-role">CSE · PSG Tech</div></div>
+          </div>
+          <div class="rpc-members-row">
+            <div class="ra" style="background:var(--lilac-mid)">P</div>
+            <div class="ra" style="background:var(--yellow-mid)">K</div>
+            <span class="rpc-count-lbl">+2 studying now</span>
+          </div>
+          <div class="rpc-footer">
+            <button class="btn-clay btn-clay--sage" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
+            <div class="rpc-info">🕐 Started 15 min ago</div>
+          </div>
+        </div>
+
+        <div class="clay-card room-page-card reveal">
+          <div class="rpc-top">
+            <span class="rpc-subject-pill" style="background:var(--lilac-light);color:var(--lilac-mid)">DBMS</span>
+            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
+          </div>
+          <div class="rpc-name">SQL & Normalization Prep</div>
+          <div class="rpc-desc">Practising complex SQL queries, joins, and normalization for exams and interviews.</div>
+          <div class="rpc-host-row">
+            <div class="rpc-host-av" style="background:var(--yellow-mid)">K</div>
+            <div><div class="rpc-host-name">Karthik R</div><div class="rpc-host-role">IT · Anna University</div></div>
+          </div>
+          <div class="rpc-members-row">
+            <div class="ra" style="background:var(--rust)">K</div>
+            <div class="ra" style="background:var(--lilac-mid)">S</div>
+            <div class="ra" style="background:var(--mint-mid)">A</div>
+            <div class="ra" style="background:var(--yellow-mid)">N</div>
+            <span class="rpc-count-lbl">+8 studying now</span>
+          </div>
+          <div class="rpc-footer">
+            <button class="btn-clay btn-clay--lilac" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
+            <div class="rpc-info">🕐 Started 1 hr ago</div>
+          </div>
+        </div>
+
+        <div class="clay-card room-page-card reveal">
+          <div class="rpc-top">
+            <span class="rpc-subject-pill" style="background:var(--peach-light);color:var(--peach-mid)">OS</span>
+            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
+          </div>
+          <div class="rpc-name">Process Scheduling & Memory</div>
+          <div class="rpc-desc">Covering scheduling algorithms, paging, segmentation, and virtual memory concepts.</div>
+          <div class="rpc-host-row">
+            <div class="rpc-host-av" style="background:var(--peach-mid)">D</div>
+            <div><div class="rpc-host-name">Divya S</div><div class="rpc-host-role">CSE · NIT Trichy</div></div>
+          </div>
+          <div class="rpc-members-row">
+            <div class="ra" style="background:var(--peach-mid)">D</div>
+            <div class="ra" style="background:var(--mint-mid)">R</div>
+            <span class="rpc-count-lbl">+3 studying now</span>
+          </div>
+          <div class="rpc-footer">
+            <button class="btn-clay btn-clay--outline" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
+            <div class="rpc-info">🕐 Started 25 min ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="rooms-sidebar">
+      <div class="clay-card create-room-card reveal" id="create-section">
+        <h3>Create a room</h3>
+        <div class="form-field"><label>Room name</label><input type="text" placeholder="e.g. Graph Theory Marathon"></div>
+        <div class="form-field"><label>Subject</label>
+          <select><option>DSA</option><option>DBMS</option><option>OS</option><option>Networks</option><option>Web Dev</option><option>System Design</option></select>
+        </div>
+        <div class="form-field"><label>Description</label><textarea placeholder="What will you study in this room?"></textarea></div>
+        <div class="form-field password-field"><label>Room password</label><input type="password" placeholder="Set a password for entry" id="room-pw"><span class="pw-eye" onclick="togglePw()">👁</span></div>
+        <div class="form-field"><label>Max members</label><select><option>5</option><option>10</option><option>15</option><option>20</option></select></div>
+        <button class="btn-clay btn-clay--rust" style="width:100%">Create room</button>
+      </div>
+
+      <div class="clay-card active-rooms-widget reveal">
+        <h4>My rooms</h4>
+        <div class="arw-item"><div class="arw-dot"></div><div class="arw-info"><div class="arw-name">Django Channels Deep Dive</div><div class="arw-count">You're the host · 3 members</div></div></div>
+        <div class="arw-item"><div class="arw-dot" style="background:var(--lilac-mid);box-shadow:none"></div><div class="arw-info"><div class="arw-name">Graph Theory Marathon</div><div class="arw-count">Member · 7 members</div></div></div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">You've been in 4 rooms this week 🔥</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand"><a href="{% url 'index' %}" class="logo" style="color:var(--chalk)"><div class="logo-mark">N</div><span>NexusLink</span></a><p>The campus network that turns college into a community.</p></div>
+    <div class="footer-links">
+      <div class="fl-col"><h4>Platform</h4><a href="{% url 'resources' %}">Resource Hub</a><a href="{% url 'chat' %}">Real-time Chat</a><a href="{% url 'rooms' %}">Study Rooms</a><a href="{% url 'connect' %}">Connect Peers</a></div>
+      <div class="fl-col"><h4>Profile</h4><a href="{% url 'profile' %}">My Profile</a><a href="{% url 'profile' %}">GitHub Connect</a><a href="{% url 'profile' %}">Codeforces</a></div>
+      <div class="fl-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 NexusLink.</span><span>Made with ♥ in Tamil Nadu</span></div>
+</footer>
+<script src="{% static 'app.js' %}"></script>
+<script>
+function joinRoom(){const p=prompt('Enter room password:');if(p)alert('Joining room… Welcome! 🎓');}
+function togglePw(){const i=document.getElementById('room-pw');i.type=i.type==='password'?'text':'password';}
+function filterRooms(el){document.querySelectorAll('.rft').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+</script>
+</body></html>

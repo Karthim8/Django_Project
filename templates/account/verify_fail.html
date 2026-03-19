@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verification Failed — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: var(--chalk); margin: 0; padding: 20px;
+  }
+  .card {
+    background: white; border-radius: 24px; padding: 48px 36px;
+    width: 100%; max-width: 460px;
+    box-shadow: 8px 8px 0 rgba(44,36,22,0.10); border: 2px solid var(--border); text-align: center;
+  }
+  .icon { font-size: 56px; margin-bottom: 20px; }
+  h1 { font-family: var(--font-display); font-size: 26px; font-weight: 900; margin: 0 0 10px 0; }
+  p { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 0 0 24px 0; }
+  .btn { display: inline-block; padding: 12px 28px; background: var(--rust); color: white; border-radius: 12px; font-weight: 700; text-decoration: none; font-family: var(--font-body); font-size: 14px; box-shadow: 4px 4px 0 rgba(193,68,14,0.3); }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="card">
+  <div class="icon">⚠️</div>
+  <h1>Link invalid or expired</h1>
+  <p>This verification link doesn't seem to be valid or has already expired. Please try signing up again.</p>
+  <a href="{% url 'custom_signup' %}" class="btn">Try again</a>
+</div>
+</body>
+</html>

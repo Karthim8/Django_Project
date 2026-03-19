@@ -1,0 +1,289 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+
+<style>
+.user-avatar-nav {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  position: relative;
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust);
+  transition: box-shadow 0.2s;
+}
+.user-avatar-nav:hover {
+  box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust);
+}
+.user-avatar-nav img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  background: var(--rust); color: white;
+  font-size: 13px; font-weight: 800;
+  font-family: var(--font-body);
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'profile' %}" class="active">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero" style="padding-bottom:40px">
+  <div class="page-hero-inner reveal">
+    <p class="eyebrow">My Profile</p>
+    <h1>Your campus<br><em>identity.</em></h1>
+    <p>Skills, placement, GitHub projects, and Codeforces stats — all in one place. Edit anytime to keep your profile up to date.</p>
+  </div>
+  <div class="page-hero-num">👤</div>
+</div>
+
+<div class="page-body">
+  <div class="profile-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="profile-sidebar">
+      <!-- ID Card -->
+      <div class="clay-card profile-id-card reveal">
+        <div class="pid-avatar" style="background:var(--rust-light);color:var(--rust)">PV</div>
+        <div class="pid-name">Priya Venkat</div>
+        <div class="pid-role">CSE · PSG Tech · 3rd Year</div>
+        <div class="pid-tags">
+          <span class="pill pill--lilac">Junior 2026</span>
+          <span class="pill pill--green"><span class="blink-dot"></span> Online</span>
+        </div>
+        <div class="pid-placement">
+          <span style="font-size:22px">🎯</span>
+          <div class="pid-placement-info">
+            <div class="pid-company">Seeking SWE Roles</div>
+            <div class="pid-position">Full Stack · Backend · DSA</div>
+          </div>
+        </div>
+        <button class="btn-clay btn-clay--rust pid-edit" style="width:100%" onclick="toggleEdit()">Edit profile</button>
+      </div>
+
+      <!-- External links -->
+      <div class="clay-card profile-links-card reveal">
+        <h4>Linked accounts</h4>
+        <div class="pl-item"><span class="pl-icon">🐙</span><span>github.com/priya-venkat</span></div>
+        <div class="pl-item"><span class="pl-icon">⚡</span><span>codeforces.com/priyav</span></div>
+        <div class="pl-item"><span class="pl-icon">💼</span><span>linkedin.com/in/priyav</span></div>
+        <div class="pl-item"><span class="pl-icon">✉️</span><span>priya@psgtech.ac.in</span></div>
+      </div>
+
+      <!-- Skills -->
+      <div class="clay-card profile-skills-card reveal">
+        <h4>Skills</h4>
+        <div class="skill-grid">
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--mint-mid)"></span>C++</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--mint-mid)"></span>Python</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--rust)"></span>Django</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--rust)"></span>WebSockets</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--yellow-mid)"></span>React</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--yellow-mid)"></span>PostgreSQL</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--lilac-mid)"></span>DSA</span>
+          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--muted)"></span>Docker</span>
+        </div>
+        <div style="margin-top:14px;font-size:11px;color:var(--muted)">
+          <span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span class="sl-dot" style="background:var(--mint-mid);display:inline-block;width:7px;height:7px;border-radius:50%"></span>Expert</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span class="sl-dot" style="background:var(--rust);display:inline-block;width:7px;height:7px;border-radius:50%"></span>Proficient</span>
+          <span style="display:inline-flex;align-items:center;gap:5px"><span class="sl-dot" style="background:var(--yellow-mid);display:inline-block;width:7px;height:7px;border-radius:50%"></span>Learning</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="profile-main">
+
+      <!-- Stats row -->
+      <div class="profile-stats-row reveal">
+        <div class="clay-card psr-card">
+          <div class="psr-icon">🐙</div>
+          <div class="psr-num" style="color:var(--ink)">9</div>
+          <div class="psr-lbl">GitHub repos</div>
+        </div>
+        <div class="clay-card psr-card">
+          <div class="psr-icon">⚡</div>
+          <div class="psr-num" style="color:var(--rust)">340</div>
+          <div class="psr-lbl">CF problems solved</div>
+        </div>
+        <div class="clay-card psr-card">
+          <div class="psr-icon">🏆</div>
+          <div class="psr-num" style="color:var(--lilac-mid)">1420</div>
+          <div class="psr-lbl">CF rating</div>
+        </div>
+        <div class="clay-card psr-card">
+          <div class="psr-icon">🤝</div>
+          <div class="psr-num" style="color:var(--mint-mid)">12</div>
+          <div class="psr-lbl">Connections</div>
+        </div>
+      </div>
+
+      <!-- GitHub repos -->
+      <div class="clay-card github-card reveal">
+        <h3>🐙 GitHub Projects <span style="font-size:13px;font-weight:400;color:var(--muted)">synced from github.com/priya-venkat</span></h3>
+        <div class="repo-list">
+          <div class="repo-item">
+            <div class="repo-name">nexuslink-backend</div>
+            <div class="repo-desc">Django + Channels real-time campus networking platform with WebSocket group chat and REST API.</div>
+            <div class="repo-meta">
+              <span class="repo-lang"><span class="repo-lang-dot" style="background:#3572A5"></span>Python</span>
+              <span class="repo-stars">⭐ 42</span>
+              <span class="repo-forks">🍴 8</span>
+            </div>
+          </div>
+          <div class="repo-item">
+            <div class="repo-name">dsa-solutions</div>
+            <div class="repo-desc">340+ solved Codeforces + LeetCode problems with detailed explanations and time complexity notes.</div>
+            <div class="repo-meta">
+              <span class="repo-lang"><span class="repo-lang-dot" style="background:#f34b7d"></span>C++</span>
+              <span class="repo-stars">⭐ 18</span>
+              <span class="repo-forks">🍴 3</span>
+            </div>
+          </div>
+          <div class="repo-item">
+            <div class="repo-name">portfolio-site</div>
+            <div class="repo-desc">Personal portfolio built with React + Tailwind, deployed on Vercel with dark mode support.</div>
+            <div class="repo-meta">
+              <span class="repo-lang"><span class="repo-lang-dot" style="background:#f1e05a"></span>JavaScript</span>
+              <span class="repo-stars">⭐ 11</span>
+              <span class="repo-forks">🍴 2</span>
+            </div>
+          </div>
+          <div class="repo-item">
+            <div class="repo-name">ml-experiments</div>
+            <div class="repo-desc">Jupyter notebooks for various ML experiments — linear regression, CNNs, and NLP classifiers.</div>
+            <div class="repo-meta">
+              <span class="repo-lang"><span class="repo-lang-dot" style="background:#3572A5"></span>Python</span>
+              <span class="repo-stars">⭐ 7</span>
+              <span class="repo-forks">🍴 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Codeforces stats -->
+      <div class="clay-card cf-stats-card reveal">
+        <h3>⚡ Codeforces Stats <span style="font-size:13px;font-weight:400;color:var(--muted)">codeforces.com/priyav</span></h3>
+        <div class="cf-grid">
+          <div class="cf-item">
+            <div class="cf-item-num" style="color:var(--rust)">1420</div>
+            <div class="cf-item-lbl">Current rating</div>
+            <span class="cf-rank-badge" style="background:var(--mint-light);color:var(--sage)">Specialist</span>
+          </div>
+          <div class="cf-item">
+            <div class="cf-item-num" style="color:var(--ink)">340</div>
+            <div class="cf-item-lbl">Problems solved</div>
+          </div>
+          <div class="cf-item">
+            <div class="cf-item-num" style="color:var(--lilac-mid)">1592</div>
+            <div class="cf-item-lbl">Max rating</div>
+            <span class="cf-rank-badge" style="background:var(--mint-light);color:var(--sage)">Expert</span>
+          </div>
+          <div class="cf-item">
+            <div class="cf-item-num" style="color:var(--ink)">47</div>
+            <div class="cf-item-lbl">Contests entered</div>
+          </div>
+          <div class="cf-item">
+            <div class="cf-item-num" style="color:var(--mint-mid)">12</div>
+            <div class="cf-item-lbl">This month</div>
+          </div>
+          <div class="cf-item">
+            <div class="cf-item-num" style="color:var(--yellow-mid)">Top 8%</div>
+            <div class="cf-item-lbl">Global rank</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit profile -->
+      <div class="clay-card edit-profile-card reveal" id="edit-card" style="display:none">
+        <h3>Edit profile</h3>
+        <div class="edit-grid">
+          <div class="form-field"><label>Full name</label><input type="text" value="Priya Venkat"></div>
+          <div class="form-field"><label>Branch</label><select><option>CSE</option><option>IT</option><option>ECE</option><option>EEE</option><option>Mech</option></select></div>
+          <div class="form-field"><label>College</label><input type="text" value="PSG Tech"></div>
+          <div class="form-field"><label>Batch / Year</label><select><option>2026</option><option>2025</option><option>2027</option><option>2028</option></select></div>
+          <div class="form-field"><label>GitHub username</label><input type="text" value="priya-venkat" placeholder="github.com/..."></div>
+          <div class="form-field"><label>Codeforces handle</label><input type="text" value="priyav" placeholder="codeforces.com/..."></div>
+          <div class="form-field"><label>Company (if placed)</label><input type="text" placeholder="e.g. Google, Amazon"></div>
+          <div class="form-field"><label>Role</label><input type="text" placeholder="e.g. SWE Intern"></div>
+        </div>
+        <div class="form-field" style="margin-top:8px"><label>Bio</label><textarea style="height:80px" placeholder="Tell your campus about yourself…"></textarea></div>
+        <div style="display:flex;gap:12px;margin-top:16px">
+          <button class="btn-clay btn-clay--rust" style="flex:1" onclick="saveProfile()">Save changes</button>
+          <button class="btn-clay btn-clay--outline" onclick="toggleEdit()">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand"><a href="{% url 'index' %}" class="logo" style="color:var(--chalk)"><div class="logo-mark">N</div><span>NexusLink</span></a><p>The campus network that turns college into a community.</p></div>
+    <div class="footer-links">
+      <div class="fl-col"><h4>Platform</h4><a href="{% url 'resources' %}">Resource Hub</a><a href="{% url 'chat' %}">Real-time Chat</a><a href="{% url 'rooms' %}">Study Rooms</a><a href="{% url 'connect' %}">Connect Peers</a></div>
+      <div class="fl-col"><h4>Profile</h4><a href="{% url 'profile' %}">My Profile</a><a href="{% url 'profile' %}">GitHub Connect</a><a href="{% url 'profile' %}">Codeforces</a></div>
+      <div class="fl-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 NexusLink.</span><span>Made with ♥ in Tamil Nadu</span></div>
+</footer>
+<script src="{% static 'app.js' %}"></script>
+<script>
+function toggleEdit(){
+  const card = document.getElementById('edit-card');
+  card.style.display = card.style.display==='none'?'block':'none';
+  card.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function saveProfile(){
+  document.getElementById('edit-card').style.display='none';
+  alert('Profile saved! ✓');
+}
+</script>
+</body></html>

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import dj_database_url
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -57,8 +58,34 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-LOGIN_REDIRECT_URL = '/'
+# ── allauth settings ──
+ACCOUNT_LOGIN_METHODS         = {'email'}
+ACCOUNT_SIGNUP_FIELDS         = ['email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION    = 'none'   # We handle verification ourselves via Brevo
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
+
+# ── Social / Google OAuth ──
+SOCIALACCOUNT_AUTO_SIGNUP      = True    # Skip confirm-signup page after Google login
+SOCIALACCOUNT_LOGIN_ON_GET     = True    # Allow GET for social login (skip confirmation page)
+SOCIALACCOUNT_EMAIL_REQUIRED   = False   # Don't block if Google doesn't return email
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_STORE_TOKENS     = False
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': '366738655809-pvuo65g4otuvhlkiuukj5q0h8eucbvj3.apps.googleusercontent.com',
+            'secret':    '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',
+            'key':       '',
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
+LOGIN_REDIRECT_URL  = '/'
 LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_ON_GET = True
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -94,10 +121,10 @@ ASGI_APPLICATION = 'project1.asgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.parse(
+        'postgresql://neondb_owner:npg_oSAxVMci3b1R@ep-frosty-night-animbgxo-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+        conn_max_age=600,
+    )
 }
 
 
@@ -136,3 +163,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
