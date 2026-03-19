@@ -1,5 +1,6 @@
 import uuid
 import json
+import random
 import urllib.request
 import urllib.error
 from django.shortcuts import render, redirect
@@ -39,44 +40,77 @@ def custom_signup(request):
         user.is_active = False  # inactive until verified
         user.save()
 
-        # Generate verification token and store it
-        token = str(uuid.uuid4())
-        request.session['verify_token'] = token
+        # Generate 6-digit OTP
+        otp = str(random.randint(100000, 999999))
+        request.session['verify_email'] = email
         request.session['verify_user_id'] = user.id
 
-        # Send verification email via Brevo
-        verify_url = request.build_absolute_uri(f'/accounts/verify/?token={token}&uid={user.id}')
-        _send_verification_email_brevo(name, email, verify_url)
+        # Store OTP in Upstash Redis (valid for 5 mins / 300s)
+        upstash_url = "https://humorous-jackal-77329.upstash.io"
+        upstash_token = "gQAAAAAAAS4RAAIncDI3OGIzOTFlYWY3ZjY0ZjEzOGExNDA2NjBhYzFhMzRkZXAyNzczMjk"
+        set_url = f"{upstash_url}/set/otp:{email}/{otp}/EX/300"
+        
+        req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer {upstash_token}"})
+        urllib.request.urlopen(req)
+
+        # Send OTP email via Brevo
+        _send_verification_email_brevo(name, email, otp)
 
         return render(request, 'account/verify_sent.html', {'email': email})
 
     return render(request, 'account/signup.html')
 
 
-def verify_email(request):
-    """Handle email verification link click."""
-    token = request.GET.get('token')
-    uid = request.GET.get('uid')
+def verify_otp(request):
+    """Handle OTP submission."""
+    if request.method == 'POST':
+        submitted_otp = request.POST.get('otp', '').strip()
+        email = request.session.get('verify_email')
+        uid = request.session.get('verify_user_id')
 
-    try:
-        user = User.objects.get(id=uid)
-        session_token = request.session.get('verify_token')
-        # Also allow verification even without session (link clicked in new browser)
-        if token and str(uid) == str(user.id):
-            user.is_active = True
-            user.save()
-            request.session.pop('verify_token', None)
-            request.session.pop('verify_user_id', None)
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            messages.success(request, f"Welcome to NexusLink, {user.first_name}! Your email has been verified.")
-            return redirect('/')
-    except User.DoesNotExist:
-        pass
+        if not email or not uid:
+            return redirect('custom_signup')
 
-    return render(request, 'account/verify_fail.html')
+        # Check OTP in Upstash Redis
+        upstash_url = "https://humorous-jackal-77329.upstash.io"
+        upstash_token = "gQAAAAAAAS4RAAIncDI3OGIzOTFlYWY3ZjY0ZjEzOGExNDA2NjBhYzFhMzRkZXAyNzczMjk"
+        get_url = f"{upstash_url}/get/otp:{email}"
+        
+        req = urllib.request.Request(get_url, headers={"Authorization": f"Bearer {upstash_token}"})
+        resp = urllib.request.urlopen(req)
+        data = json.loads(resp.read().decode())
+        stored_otp = data.get("result")
+
+        if stored_otp and str(stored_otp) == str(submitted_otp):
+            try:
+                user = User.objects.get(id=uid)
+                user.is_active = True
+                user.save()
+                
+                # Cleanup Upstash
+                del_url = f"{upstash_url}/del/otp:{email}"
+                del_req = urllib.request.Request(del_url, headers={"Authorization": f"Bearer {upstash_token}"})
+                urllib.request.urlopen(del_req)
+
+                request.session.pop('verify_email', None)
+                request.session.pop('verify_user_id', None)
+
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                messages.success(request, f"Welcome to NexusLink, {user.first_name}!")
+                return redirect('/')
+            except User.DoesNotExist:
+                return render(request, 'account/verify_sent.html', {'email': email, 'error': "User not found."})
+        else:
+            return render(request, 'account/verify_sent.html', {'email': email, 'error': "Invalid or expired OTP."})
+
+    # For GET request
+    email = request.session.get('verify_email')
+    if not email:
+        return redirect('custom_signup')
+    return render(request, 'account/verify_sent.html', {'email': email})
 
 
-def _send_verification_email_brevo(name, email, verify_url):
+def _send_verification_email_brevo(name, email, otp):
     """Send email via Brevo (Sendinblue) API."""
     api_key = "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"
     url = "https://api.brevo.com/v3/smtp/email"
@@ -87,17 +121,17 @@ def _send_verification_email_brevo(name, email, verify_url):
         <span style="background:#c1440e; color:white; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; font-size:22px; font-weight:900; font-family:Georgia,serif;">N</span>
         <span style="font-size:22px; font-weight:900; margin-left:8px; font-family:Georgia,serif;">NexusLink</span>
       </div>
-      <h2 style="font-family:Georgia,serif; font-weight:900; font-size:24px; margin-bottom:8px; text-align:center;">Verify your email, {name}! 🎓</h2>
-      <p style="color:#6b5e4e; font-size:15px; text-align:center; margin-bottom:28px;">You're one step away from joining the campus network.</p>
+      <h2 style="font-family:Georgia,serif; font-weight:900; font-size:24px; margin-bottom:8px; text-align:center;">Your Verification Code</h2>
+      <p style="color:#6b5e4e; font-size:15px; text-align:center; margin-bottom:28px;">Use the following 6-digit code to verify your email, {name}:</p>
       <div style="text-align:center; margin-bottom:28px;">
-        <a href="{verify_url}" style="background:#c1440e; color:white; padding:14px 36px; border-radius:12px; text-decoration:none; font-size:15px; font-weight:700; display:inline-block; box-shadow: 4px 4px 0 rgba(193,68,14,0.3);">Verify my email ✓</a>
+        <div style="background:white; border:2px dashed #c1440e; color:#c1440e; padding:18px 36px; border-radius:12px; font-size:32px; font-weight:900; letter-spacing:8px; display:inline-block;">{otp}</div>
       </div>
-      <p style="color:#9b8b7b; font-size:12px; text-align:center;">If you didn't create an account, you can safely ignore this email. This link expires in 24 hours.</p>
+      <p style="color:#9b8b7b; font-size:12px; text-align:center;">This code expires in 5 minutes. If you didn't create an account, you can safely ignore this email.</p>
     </div>
     """
 
     payload = json.dumps({
-        "sender": {"name": "NexusLink", "email": "noreply@nexuslink.app"},
+        "sender": {"name": "NexusLink", "email": "karthikeyanspro@gmail.com"},
         "to": [{"email": email, "name": name}],
         "subject": "Verify your NexusLink account 🎓",
         "htmlContent": html_body
