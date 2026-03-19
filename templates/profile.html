@@ -33,9 +33,36 @@
   font-size: 13px; font-weight: 800;
   font-family: var(--font-body);
 }
+
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(44,36,22,0.4);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: white; border-radius: 20px; padding: 32px 28px;
+  width: 320px; box-shadow: 8px 8px 0 rgba(44,36,22,0.12);
+  transform: translateY(16px); transition: transform 0.2s;
+  text-align: center;
+}
+.modal-overlay.open .modal-box { transform: translateY(0); }
+.modal-box h3 { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+.modal-box p { font-size: 14px; color: var(--muted); line-height: 1.5; }
 </style>
 </head>
 <body>
+<div class="modal-overlay" id="success-modal">
+  <div class="modal-box">
+    <div style="font-size: 48px; margin-bottom: 12px; animation: msgPop 0.4s ease both;">🎉</div>
+    <h3>Profile Saved!</h3>
+    <p>Your campus identity has been updated successfully.</p>
+  </div>
+</div>
 <div class="grain"></div>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-trail" id="cursorTrail"></div>
@@ -89,18 +116,18 @@
     <aside class="profile-sidebar">
       <!-- ID Card -->
       <div class="clay-card profile-id-card reveal">
-        <div class="pid-avatar" style="background:var(--rust-light);color:var(--rust)">PV</div>
-        <div class="pid-name">Priya Venkat</div>
-        <div class="pid-role">CSE · PSG Tech · 3rd Year</div>
+        <div class="pid-avatar" style="background:var(--rust-light);color:var(--rust)">{% if user.is_authenticated and user.first_name %}{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}{% else %}PV{% endif %}</div>
+        <div class="pid-name">{% if user.is_authenticated and user.first_name %}{{ user.get_full_name|title }}{% elif user.is_authenticated %}{{ user.username }}{% else %}Priya Venkat{% endif %}</div>
+        <div class="pid-role">{{ user.profile.branch|default:'CSE' }} · {{ user.profile.college|default:'PSG Tech' }} · {{ user.profile.batch_year|default:'3rd' }} Year</div>
         <div class="pid-tags">
-          <span class="pill pill--lilac">Junior 2026</span>
+          <span class="pill pill--lilac">Class of {{ user.profile.batch_year|default:'2026' }}</span>
           <span class="pill pill--green"><span class="blink-dot"></span> Online</span>
         </div>
         <div class="pid-placement">
           <span style="font-size:22px">🎯</span>
           <div class="pid-placement-info">
-            <div class="pid-company">Seeking SWE Roles</div>
-            <div class="pid-position">Full Stack · Backend · DSA</div>
+            <div class="pid-company">{% if user.placements.first %}{{ user.placements.first.company }}{% else %}Seeking SWE Roles{% endif %}</div>
+            <div class="pid-position">{% if user.placements.first %}{{ user.placements.first.role }}{% else %}Full Stack · Backend · DSA{% endif %}</div>
           </div>
         </div>
         <button class="btn-clay btn-clay--rust pid-edit" style="width:100%" onclick="toggleEdit()">Edit profile</button>
@@ -109,24 +136,22 @@
       <!-- External links -->
       <div class="clay-card profile-links-card reveal">
         <h4>Linked accounts</h4>
-        <div class="pl-item"><span class="pl-icon">🐙</span><span>github.com/priya-venkat</span></div>
-        <div class="pl-item"><span class="pl-icon">⚡</span><span>codeforces.com/priyav</span></div>
-        <div class="pl-item"><span class="pl-icon">💼</span><span>linkedin.com/in/priyav</span></div>
-        <div class="pl-item"><span class="pl-icon">✉️</span><span>priya@psgtech.ac.in</span></div>
+        <div class="pl-item"><span class="pl-icon">🐙</span><span>{% if user.profile.github %}github.com/{{ user.profile.github }}{% else %}Not Connected{% endif %}</span></div>
+        <div class="pl-item"><span class="pl-icon">⚡</span><span>{% if user.profile.codeforces %}codeforces.com/{{ user.profile.codeforces }}{% else %}Not Connected{% endif %}</span></div>
+        <div class="pl-item"><span class="pl-icon">✉️</span><span>{{ user.email }}</span></div>
       </div>
 
       <!-- Skills -->
       <div class="clay-card profile-skills-card reveal">
         <h4>Skills</h4>
         <div class="skill-grid">
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--mint-mid)"></span>C++</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--mint-mid)"></span>Python</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--rust)"></span>Django</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--rust)"></span>WebSockets</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--yellow-mid)"></span>React</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--yellow-mid)"></span>PostgreSQL</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--lilac-mid)"></span>DSA</span>
-          <span class="skill-level-tag"><span class="sl-dot" style="background:var(--muted)"></span>Docker</span>
+          {% if user.profile.skills %}
+            {% for skill in user.profile.skills %}
+            <span class="skill-level-tag"><span class="sl-dot" style="background:var(--mint-mid)"></span>{{ skill }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="skill-level-tag"><span class="sl-dot" style="background:var(--muted)"></span>Add skills below</span>
+          {% endif %}
         </div>
         <div style="margin-top:14px;font-size:11px;color:var(--muted)">
           <span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span class="sl-dot" style="background:var(--mint-mid);display:inline-block;width:7px;height:7px;border-radius:50%"></span>Expert</span>
@@ -240,24 +265,28 @@
       </div>
 
       <!-- Edit profile -->
-      <div class="clay-card edit-profile-card reveal" id="edit-card" style="display:none">
-        <h3>Edit profile</h3>
-        <div class="edit-grid">
-          <div class="form-field"><label>Full name</label><input type="text" value="Priya Venkat"></div>
-          <div class="form-field"><label>Branch</label><select><option>CSE</option><option>IT</option><option>ECE</option><option>EEE</option><option>Mech</option></select></div>
-          <div class="form-field"><label>College</label><input type="text" value="PSG Tech"></div>
-          <div class="form-field"><label>Batch / Year</label><select><option>2026</option><option>2025</option><option>2027</option><option>2028</option></select></div>
-          <div class="form-field"><label>GitHub username</label><input type="text" value="priya-venkat" placeholder="github.com/..."></div>
-          <div class="form-field"><label>Codeforces handle</label><input type="text" value="priyav" placeholder="codeforces.com/..."></div>
-          <div class="form-field"><label>Company (if placed)</label><input type="text" placeholder="e.g. Google, Amazon"></div>
-          <div class="form-field"><label>Role</label><input type="text" placeholder="e.g. SWE Intern"></div>
-        </div>
-        <div class="form-field" style="margin-top:8px"><label>Bio</label><textarea style="height:80px" placeholder="Tell your campus about yourself…"></textarea></div>
+      <form method="POST" action="{% url 'profile' %}" id="profile-form" onsubmit="event.preventDefault(); showSuccessModal();">
+        {% csrf_token %}
+        <div class="clay-card edit-profile-card reveal" id="edit-card" style="display:none">
+          <h3>Edit profile</h3>
+          <div class="edit-grid">
+            <div class="form-field"><label>Full name</label><input type="text" name="full_name" value="{% if user.is_authenticated and user.first_name %}{{ user.get_full_name|title }}{% elif user.is_authenticated %}{{ user.username }}{% else %}Priya Venkat{% endif %}"></div>
+            <div class="form-field"><label>College</label><input type="text" name="college" value="{{ user.profile.college }}" placeholder="e.g. PSG Tech"></div>
+            <div class="form-field"><label>Branch</label><input type="text" name="branch" value="{{ user.profile.branch }}" placeholder="e.g. CSE"></div>
+            <div class="form-field"><label>Batch / Year</label><input type="number" name="batch_year" value="{{ user.profile.batch_year|default:'' }}" placeholder="e.g. 2026"></div>
+            <div class="form-field"><label>GitHub username</label><input type="text" name="github" value="{{ user.profile.github }}" placeholder="github.com/..."></div>
+            <div class="form-field"><label>Codeforces handle</label><input type="text" name="codeforces" value="{{ user.profile.codeforces }}" placeholder="codeforces.com/..."></div>
+            <div class="form-field"><label>Company (if placed)</label><input type="text" name="company" value="{% if user.placements.first %}{{ user.placements.first.company }}{% endif %}" placeholder="e.g. Google, Amazon"></div>
+            <div class="form-field"><label>Role</label><input type="text" name="role" value="{% if user.placements.first %}{{ user.placements.first.role }}{% endif %}" placeholder="e.g. SWE Intern"></div>
+            <div class="form-field" style="grid-column: span 2"><label>Skills (comma separated)</label><input type="text" name="skills" value="{{ user.profile.skills|join:', ' }}" placeholder="e.g. Python, Django, React"></div>
+          </div>
+          <div class="form-field" style="margin-top:8px"><label>Bio</label><textarea name="bio" style="height:80px" placeholder="Tell your campus about yourself…">{{ user.profile.bio }}</textarea></div>
         <div style="display:flex;gap:12px;margin-top:16px">
-          <button class="btn-clay btn-clay--rust" style="flex:1" onclick="saveProfile()">Save changes</button>
-          <button class="btn-clay btn-clay--outline" onclick="toggleEdit()">Cancel</button>
+          <button type="submit" class="btn-clay btn-clay--rust" style="flex:1">Save changes</button>
+          <button type="button" class="btn-clay btn-clay--outline" onclick="toggleEdit()">Cancel</button>
         </div>
       </div>
+      </form>
 
     </div>
   </div>
@@ -279,11 +308,17 @@
 function toggleEdit(){
   const card = document.getElementById('edit-card');
   card.style.display = card.style.display==='none'?'block':'none';
-  card.scrollIntoView({behavior:'smooth', block:'start'});
+  if(card.style.display === 'block') {
+    card.scrollIntoView({behavior:'smooth', block:'start'});
+  }
 }
-function saveProfile(){
+function showSuccessModal(){
   document.getElementById('edit-card').style.display='none';
-  alert('Profile saved! ✓');
+  const modal = document.getElementById('success-modal');
+  modal.classList.add('open');
+  setTimeout(() => {
+    document.getElementById('profile-form').submit();
+  }, 1500);
 }
 </script>
 </body></html>
