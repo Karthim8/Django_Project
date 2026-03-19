@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>🔥 Real-Time Chat</h2>
+
+<input id="msg" type="text">
+<button onclick="sendMsg()">Send</button>
+<a href="/accounts/google/login/">Login with Google</a>
+<ul id="chat"></ul>
+
+<script>
+const socket = new WebSocket("ws://127.0.0.1:8000/ws/chat/");
+
+socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+
+    const li = document.createElement("li");
+    li.textContent = data.message;
+
+    document.getElementById("chat").appendChild(li);
+};
+
+function sendMsg() {
+    const message = document.getElementById("msg").value;
+
+    socket.send(JSON.stringify({
+        "message": message
+    }));
+}
+</script>
+
+</body>
+</html>
