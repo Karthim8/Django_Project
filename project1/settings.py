@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'allauth.account',        # 🔥 IMPORTANT (missing → your error)
     'allauth.socialaccount',  # 🔥 IMPORTANT
     'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
 ]
 SITE_ID = 1 # for django-allauth, if you are using it for authentication
 AUTHENTICATION_BACKENDS = [
@@ -80,6 +81,12 @@ SOCIALACCOUNT_PROVIDERS = {
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
+    },
+    'github': {
+        'APP': {
+            'client_id': 'Ov23linFdeZUXNqKAjcu',
+            'secret': '8d02d19c16eb5c977968e8f48c2a91f75a575df2',
+        }
     }
 }
 
