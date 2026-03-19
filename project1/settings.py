@@ -13,6 +13,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 import dj_database_url
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+UPSTASH_REDIS_URL = os.getenv('UPSTASH_REDIS_URL', 'redis://localhost:6379')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,9 +36,25 @@ ALLOWED_HOSTS = []
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-    },
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [UPSTASH_REDIS_URL],
+        },
+    }
 }
+
+# Celery
+CELERY_BROKER_URL = UPSTASH_REDIS_URL
+if CELERY_BROKER_URL and CELERY_BROKER_URL.startswith("rediss://"):
+    _sep = "&" if "?" in CELERY_BROKER_URL else "?"
+    CELERY_BROKER_URL += f"{_sep}ssl_cert_reqs=CERT_NONE"
+
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 # Application definition
 
 INSTALLED_APPS = [
@@ -70,7 +91,7 @@ SOCIALACCOUNT_AUTO_SIGNUP      = True    # Skip confirm-signup page after Google
 SOCIALACCOUNT_LOGIN_ON_GET     = True    # Allow GET for social login (skip confirmation page)
 SOCIALACCOUNT_EMAIL_REQUIRED   = False   # Don't block if Google doesn't return email
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
-SOCIALACCOUNT_STORE_TOKENS     = False
+SOCIALACCOUNT_STORE_TOKENS     = True
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {

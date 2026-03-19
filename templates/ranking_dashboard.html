@@ -1,0 +1,314 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Developer Dashboard — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { background: var(--chalk); margin: 0; overflow-x: hidden; }
+.dashboard-container { max-width: 1000px; margin: 0 auto; padding: 40px 24px; display: flex; flex-direction: column; gap: 24px; }
+.rank-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.stat-card { background: white; border-radius: 20px; padding: 24px; box-shadow: 6px 6px 0 rgba(44,36,22,0.06); border: 1.5px solid var(--border); text-align: center; }
+.stat-val { font-family: var(--font-display); font-size: 32px; font-weight: 900; color: var(--ink); margin-bottom: 4px; }
+.stat-lbl { font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+.section-card { background: white; border-radius: 24px; padding: 32px; box-shadow: 8px 8px 0 rgba(44,36,22,0.08); border: 2px solid var(--border); position: relative; }
+.section-title { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--ink); margin-top: 0; margin-bottom: 20px; }
+
+#evaluation-progress { text-align: center; }
+.progress-bar-track { height: 12px; background: var(--chalk-warm); border-radius: 10px; overflow: hidden; margin-top: 12px; }
+#progress-bar { height: 100%; width: 0%; background: var(--rust); transition: width 0.4s ease; }
+
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge { background: var(--mint-light); color: var(--mint-dark); padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: 700; font-family: var(--font-body); border: 1.5px solid rgba(76,175,80,0.2); }
+
+table { width: 100%; border-collapse: collapse; margin-top: 16px; font-family: var(--font-body); }
+th, td { padding: 14px; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; font-weight: 800; }
+td { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+/* Standard Navbar Override for Dashboard */
+#navbar { position: relative !important; z-index: 50; }
+</style>
+</head>
+<body>
+<nav id="navbar">
+  <div class="nav-inner" style="padding: 12px 24px !important;">
+    <a href="{% url 'index' %}" class="logo">
+      <div class="logo-mark">N</div>
+      <span>NexusLink</span>
+    </a>
+    <div class="nav-links">
+      <a href="{% url 'chat' %}">Rooms</a>
+      <a href="{% url 'resources' %}">Resources</a>
+      <a href="{% url 'connect' %}">Connect</a>
+      <a href="{% url 'dashboard' %}" style="color:var(--rust)">Dashboard</a>
+    </div>
+    <div class="nav-actions">
+      <a href="{% url 'profile' %}" class="nav-avatar">
+        {% if user.profile.avatar_url %}
+        <img src="{{ user.profile.avatar_url }}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+        {% else %}
+        <div style="background:var(--rust);color:white;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">{{ user.first_name|make_list|first|default:"U" }}</div>
+        {% endif %}
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="dashboard-container">
+  {% if not profile or profile.evaluation_status != 'complete' %}
+  <!-- Progress Bar (shown during evaluation matching user spec) -->
+  <div id="evaluation-progress" class="section-card">
+    <h3 class="section-title">Developer Analysis</h3>
+    <p id="status-text" style="font-family:var(--font-body); color:var(--muted); font-weight:600; font-size:16px;">
+      {% if not profile %}Waiting for GitHub connection...{% else %}🔄 Resuming analysis...{% endif %}
+    </p>
+    <div class="progress-bar-track">
+      <div id="progress-bar" style="width: 0%"></div>
+    </div>
+  </div>
+  {% else %}
+
+  {% if profile.is_suspicious %}
+  <div class="section-card" style="background: #fff3cd; border-color: #ffeeba;">
+    <h3 class="section-title" style="color: #856404;">⚠️ Suspicious Activity Detected</h3>
+    <ul style="font-family:var(--font-body); color:#856404; font-weight:600; font-size:14px; margin:0; padding-left:16px;">
+      {% for flag in profile.cheat_flags %}
+        <li>{{ flag }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="rank-cards">
+    <div class="stat-card">
+      <div class="stat-val">#{{ profile.global_rank }}</div>
+      <div class="stat-lbl">Global Rank</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">#{{ profile.campus_rank }}</div>
+      <div class="stat-lbl">Campus Rank</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ profile.overall_score }}/100</div>
+      <div class="stat-lbl">AI Score</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ profile.rank_title }}</div>
+      <div class="stat-lbl">Evaluation</div>
+    </div>
+  </div>
+
+  <!-- GitHub Raw Statistics -->
+  <div class="section-card">
+    <h3 class="section-title">GitHub Statistics</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px;">
+      
+      <div style="flex: 1; min-width: 120px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin:0 0 8px 0;">Repositories</h4>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--ink)">{{ profile.total_repos }}</div>
+      </div>
+
+      <div style="flex: 1; min-width: 120px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin:0 0 8px 0;">Total Stars</h4>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--rust)">⭐ {{ profile.total_stars_received }}</div>
+      </div>
+
+      <div style="flex: 1; min-width: 120px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin:0 0 8px 0;">Merged PRs</h4>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--ink)">{{ profile.total_prs_merged }}</div>
+      </div>
+
+      <div style="flex: 1; min-width: 120px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin:0 0 8px 0;">Total Commits</h4>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--ink)">{{ profile.total_commits }}</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:24px; display:flex; gap:32px; flex-wrap:wrap;">
+      <div style="flex:1">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Languages Used</h4>
+        <div class="badges">
+          {% for lang, bytes in profile.languages_used.items %}
+            <span class="badge" style="background:#f3f4f6; color:#4b5563; border:none;">{{ lang }}</span>
+          {% empty %}
+            <span style="font-family:var(--font-body);font-size:13px;color:var(--muted)">No languages recorded</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="flex:1">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Notable Contributions</h4>
+        <ul style="font-family:var(--font-body);font-size:14px;color:var(--ink);padding-left:16px;margin:0">
+          {% for pr in profile.notable_contributions %}
+            <li style="margin-bottom:6px"><strong>{{ pr.repo }}</strong> ({{ pr.stars }} ⭐) - {% if pr.merged %}<span style="color:var(--mint-dark);font-weight:700">Merged</span>{% else %}Pending{% endif %}</li>
+          {% empty %}
+            <li style="color:var(--muted)">No notable OSS contributions yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:24px;">
+    <!-- Radar Chart -->
+    <div class="section-card">
+      <h3 class="section-title">Skill Radar</h3>
+      <canvas id="skillChart" style="max-height:350px"></canvas>
+    </div>
+
+    <!-- Details -->
+    <div class="section-card">
+      <h3 class="section-title">AI Assessment</h3>
+      <p style="font-family:var(--font-body);font-size:15px;color:var(--ink);line-height:1.6;font-weight:500;">
+        {{ profile.summary }}
+      </p>
+      
+      <div style="margin-top:20px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;">Top Strength</h4>
+        <div style="font-family:var(--font-body);font-size:15px;font-weight:700;color:var(--mint-dark)">+ {{ profile.top_strength }}</div>
+      </div>
+      <div style="margin-top:16px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;">Key Area to Improve</h4>
+        <div style="font-family:var(--font-body);font-size:15px;font-weight:700;color:var(--rust)">- {{ profile.top_weakness }}</div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <h4 style="font-family:var(--font-body);font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Earned Badges</h4>
+        <div class="badges">
+          {% for badge in profile.badges %}
+            <span class="badge">{{ badge }}</span>
+          {% empty %}
+            <span style="font-family:var(--font-body);font-size:13px;color:var(--muted)">No badges yet</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="section-card" style="overflow-x: auto;">
+    <h3 class="section-title">Contribution Heatmap</h3>
+    <div id="heatmap"></div>
+  </div>
+  {% endif %}
+
+  <!-- Leaderboard -->
+  <div class="section-card" style="overflow-x: auto;">
+    <h3 class="section-title">Global Leaderboard</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Developer</th>
+          <th>Score</th>
+          <th>Level</th>
+          <th>Badges</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <tr><td colspan="5" style="text-align:center;color:var(--muted)">Loading Live Leaderboard...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const username = "{{ profile.github_username|default:'' }}";
+
+// ── WebSocket for live progress ──────────────────────────────
+if (username && "{{ profile.evaluation_status }}" !== "complete") {
+  const socketProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const socket = new WebSocket(`${socketProtocol}://${window.location.host}/ws/evaluation/${username}/`);
+  
+  socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const textEl = document.getElementById('status-text');
+    const barEl = document.getElementById('progress-bar');
+    if (textEl) textEl.innerText = data.message;
+    if (barEl) barEl.style.width = Math.max(0, data.progress) + '%';
+    
+    if (data.progress === 100) {
+      setTimeout(() => location.reload(), 1500);
+    }
+  };
+}
+
+// ── Live Leaderboard ─────────────────────────────────────────
+const lbProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const lbSocket = new WebSocket(`${lbProtocol}://${window.location.host}/ws/leaderboard/`);
+lbSocket.onmessage = function(e) {
+  const data = JSON.parse(e.data);
+  const tbody = document.getElementById('leaderboard-body');
+  if (data.leaderboard.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No developers ranked yet.</td></tr>';
+  } else {
+      tbody.innerHTML = data.leaderboard.map(dev => `
+        <tr>
+          <td><strong style="color:var(--rust)">#${dev.global_rank}</strong></td>
+          <td>${dev.username}</td>
+          <td>${dev.overall_score}</td>
+          <td>${dev.rank_title}</td>
+          <td>${dev.badges.join('  ')}</td>
+        </tr>
+      `).join('');
+  }
+};
+
+{% if profile and profile.evaluation_status == 'complete' %}
+// ── Radar Chart ──────────────────────────────────────────────
+new Chart(document.getElementById("skillChart"), {
+  type: "radar",
+  data: {
+    labels: ["Consistency", "Complexity", "Collaboration", "Diversity", "Documentation", "OSS"],
+    datasets: [{
+      label: "Skill Distribution",
+      data: [
+        {{ profile.consistency_score|default:0 }},
+        {{ profile.complexity_score|default:0 }},
+        {{ profile.collaboration_score|default:0 }},
+        {{ profile.diversity_score|default:0 }},
+        {{ profile.documentation_score|default:0 }},
+        {{ profile.oss_contribution_score|default:0 }}
+      ],
+      backgroundColor: "rgba(193, 68, 14, 0.2)",
+      borderColor: "var(--rust)",
+      pointBackgroundColor: "var(--rust)",
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+    plugins: { legend: { display: false } }
+  }
+});
+
+// ── Heatmap ──────────────────────────────────────────────────
+const rawCommitData = {{ profile.commit_map|safe|default:"{}" }};
+const sourceData = Object.entries(rawCommitData).map(([date, count]) => ({
+  date: date, value: count
+}));
+
+const cal = new CalHeatmap();
+cal.paint({
+  itemSelector: "#heatmap",
+  data: { source: sourceData, x: "date", y: "value" },
+  date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
+  range: 12,
+  domain: { type: "month" },
+  subDomain: { type: "day", width: 14, height: 14 },
+  scale: { color: { scheme: "Greens", type: "linear", domain: [0, 5] } }
+});
+{% endif %}
+</script>
+</body>
+</html>

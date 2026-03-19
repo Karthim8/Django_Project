@@ -91,3 +91,16 @@ def profile_view(request):
 
 def resources_view(request):
     return render(request, "resources.html")
+
+def dashboard_view(request):
+    if not request.user.is_authenticated:
+        from django.shortcuts import redirect
+        return redirect('account_login')
+    
+    from accounts.models import DeveloperProfile
+    try:
+        profile = request.user.developer_profile
+    except DeveloperProfile.DoesNotExist:
+        profile = None
+
+    return render(request, "ranking_dashboard.html", {"profile": profile})
