@@ -39,77 +39,15 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
 /* ── App Shell ── */
 .app {
   display: grid;
-  grid-template-rows: 64px 1fr;
+  grid-template-rows: auto 1fr;
   height: 100vh;
 }
-
-/* ── Topbar ── */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  background: white;
-  border-bottom: 1.5px solid var(--border);
-  position: relative;
+#navbar {
+  position: relative !important;
   z-index: 50;
-  flex-shrink: 0;
 }
-.topbar-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 900;
-  color: var(--ink);
-  text-decoration: none;
-}
-.topbar-logo-mark {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: var(--rust);
-  color: white;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 900;
-  box-shadow: 3px 3px 0 rgba(193,68,14,0.3);
-}
-.topbar-nav {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-.topbar-nav a {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.topbar-nav a:hover, .topbar-nav a.active { color: var(--rust); }
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.user-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 100px;
-  background: var(--chalk);
-  border: 1.5px solid var(--border);
-  font-size: 12px;
-  font-weight: 700;
-}
-.user-av {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: var(--lilac-mid);
-  color: white;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 800;
+.nav-inner {
+  padding: 12px 24px !important;
 }
 
 /* ── Body ── */
@@ -522,39 +460,38 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
 <div class="app">
 
   <!-- ── TOPBAR ── -->
-  <header class="topbar">
-    <a href="{% url 'index' %}" class="topbar-logo">
-      <div class="topbar-logo-mark">N</div>
-      NexusLink
-    </a>
-    <nav class="topbar-nav">
-      <a href="{% url 'index' %}">Home</a>
-      <a href="{% url 'resources' %}">Resources</a>
-      <a href="{% url 'chat' %}" class="active">Chat</a>
-      <a href="{% url 'rooms' %}">Study Rooms</a>
-      <a href="{% url 'connect' %}">Connect</a>
-      <a href="{% url 'profile' %}">Profile</a>
-    </nav>
-    <div class="topbar-actions">
-      {% if user.is_authenticated %}
-        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
-          {% if user.socialaccount_set.all %}
-            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
-          {% else %}
-             <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
-          {% endif %}
-        </a>
-        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" class="btn-ghost" style="background:none;border:none;font-size:13px;font-weight:600;cursor:pointer;">Sign out</button>
-        </form>
-      {% else %}
-        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
-        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
-      {% endif %}
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+      <ul class="nav-links">
+        <li><a href="{% url 'index' %}">Home</a></li>
+        <li><a href="{% url 'resources' %}">Resources</a></li>
+        <li><a href="{% url 'chat' %}" class="active">Chat</a></li>
+        <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+        <li><a href="{% url 'connect' %}">Connect</a></li>
+        <li><a href="{% url 'profile' %}">Profile</a></li>
+      </ul>
+      <div class="nav-actions">
+        {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+            {% if user.socialaccount_set.all %}
+              <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% else %}
+              <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% endif %}
+          </a>
+          <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+          <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+        {% endif %}
+      </div>
     </div>
-  </header>
+  </nav>
 
   <!-- ── CHAT BODY ── -->
   <div class="chat-body">

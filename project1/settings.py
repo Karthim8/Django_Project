@@ -122,11 +122,10 @@ ASGI_APPLICATION = 'project1.asgi.application'
 
 DATABASES = {
     'default': dj_database_url.parse(
-        'postgresql://neondb_owner:npg_oSAxVMci3b1R@ep-frosty-night-animbgxo-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+        'postgresql://neondb_owner:npg_8Yxez7APOCMr@ep-wandering-breeze-a1cskk2m.ap-southeast-1.aws.neon.tech/neondb?sslmode=require',
         conn_max_age=600,
     )
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
