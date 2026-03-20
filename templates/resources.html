@@ -95,20 +95,32 @@
     <!-- SIDEBAR -->
     <aside class="res-sidebar">
       <!-- Upload card -->
+      <!-- Upload card -->
+      {% if messages %}
+        <div style="margin-bottom:20px;">
+          {% for msg in messages %}
+            <div style="padding:15px; border-radius:8px; margin-bottom:10px; background:{% if msg.tags == 'error' %}var(--sunset-light){% else %}var(--mint-light){% endif %}; font-weight:600;">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
       <div class="clay-card upload-big reveal" id="upload-section">
         <h3>Upload a resource</h3>
-        <div class="upload-drop">
-          <div class="upload-drop-icon">📁</div>
-          <h4>Drop your file here</h4>
-          <p>PDF, PPT, DOCX, ZIP supported</p>
-          <button class="btn-clay btn-clay--rust">Browse files</button>
-        </div>
-        <div class="upload-meta">
-          <div class="form-field"><label>Subject</label><select><option>Data Structures</option><option>DBMS</option><option>OS</option><option>Networks</option><option>System Design</option></select></div>
-          <div class="form-field"><label>Year</label><select><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></div>
-          <div class="form-field" style="grid-column:span 2"><label>Resource name</label><input type="text" placeholder="e.g. DSA Advanced — Graphs & DP"></div>
-        </div>
-        <button class="btn-clay btn-clay--rust" style="width:100%;margin-top:16px">Upload now</button>
+        <form method="POST" action="{% url 'resources' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="upload-drop" style="position:relative; cursor:pointer;" onclick="document.getElementById('resource_file').click()">
+            <div class="upload-drop-icon">📁</div>
+            <h4 id="file-name-display">Drop your file here or click</h4>
+            <p>PDF, PPT, DOCX, ZIP supported</p>
+            <input type="file" name="resource_file" id="resource_file" style="display:none;" onchange="document.getElementById('file-name-display').innerText = this.files[0].name" required>
+            <button type="button" class="btn-clay btn-clay--rust">Browse files</button>
+          </div>
+          <div class="upload-meta">
+            <div class="form-field"><label>Subject</label><select name="subject"><option>Data Structures</option><option>DBMS</option><option>OS</option><option>Networks</option><option>System Design</option><option>Maths</option></select></div>
+            <div class="form-field"><label>Year</label><select name="semester"><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></div>
+            <div class="form-field" style="grid-column:span 2"><label>Resource name</label><input type="text" name="title" placeholder="e.g. DSA Advanced — Graphs & DP" required></div>
+          </div>
+          <button type="submit" class="btn-clay btn-clay--rust" style="width:100%;margin-top:16px">Upload now</button>
+        </form>
       </div>
 
       <!-- Filter card -->
@@ -154,89 +166,30 @@
       </div>
 
       <div class="res-cards">
+        {% for res in resources %}
         <div class="clay-card res-card-full">
           <div class="rcf-icon" style="background:var(--rust-light)">📄</div>
           <div class="rcf-info">
-            <div class="rcf-name">DSA Advanced — Graphs & DP.pdf</div>
-            <div class="rcf-meta">Uploaded by <strong>Anjali Kumar</strong> (Google SWE) · 2.4 MB · 3 days ago</div>
-            <div class="rcf-tags"><span>DSA</span><span>Graphs</span><span>Dynamic Programming</span><span>3rd Year</span></div>
+            <div class="rcf-name">{{ res.title }}</div>
+            <div class="rcf-meta">Uploaded by <strong>{{ res.uploader.get_full_name|default:res.uploader.username }}</strong> · {{ res.upload_date|timesince }} ago</div>
+            <div class="rcf-tags">
+              <span>{{ res.subject }}</span>
+              {% if res.semester %}<span>Semester {{ res.semester }}</span>{% endif %}
+              {% for tag in res.tags.all %}<span>{{ tag.name }}</span>{% endfor %}
+            </div>
           </div>
           <div class="rcf-right">
-            <div class="rcf-size">2.4 MB</div>
-            <div class="rcf-downloads">↓ 142 downloads</div>
-            <button class="btn-clay btn-clay--rust btn-sm">↓ Download</button>
+            <div class="rcf-size">Cloud</div>
+            <div class="rcf-downloads">↓ {{ res.downloads }} downloads</div>
+            <a href="{{ res.presigned_url|default:res.file_url }}" target="_blank" style="text-decoration:none;"><button class="btn-clay btn-clay--rust btn-sm">↓ Download</button></a>
           </div>
         </div>
-
-        <div class="clay-card res-card-full">
-          <div class="rcf-icon" style="background:var(--mint-light)">📊</div>
-          <div class="rcf-info">
-            <div class="rcf-name">System Design Interview Prep.pptx</div>
-            <div class="rcf-meta">Uploaded by <strong>Mohammed Saleem</strong> (Amazon SDE) · 8.1 MB · 1 week ago</div>
-            <div class="rcf-tags"><span>System Design</span><span>Interview</span><span>4th Year</span></div>
-          </div>
-          <div class="rcf-right">
-            <div class="rcf-size">8.1 MB</div>
-            <div class="rcf-downloads">↓ 98 downloads</div>
-            <button class="btn-clay btn-clay--sage btn-sm">↓ Download</button>
-          </div>
+        {% empty %}
+        <div class="clay-card">
+          <h3 style="margin-bottom:10px">No resources found.</h3>
+          <p style="color:var(--muted)">Be the first to upload a resource to Amazon S3!</p>
         </div>
-
-        <div class="clay-card res-card-full">
-          <div class="rcf-icon" style="background:var(--lilac-light)">📝</div>
-          <div class="rcf-info">
-            <div class="rcf-name">DBMS Complete Notes — Unit 1–5.pdf</div>
-            <div class="rcf-meta">Uploaded by <strong>Ravi Kumar</strong> · 5.8 MB · 2 weeks ago</div>
-            <div class="rcf-tags"><span>DBMS</span><span>Notes</span><span>Exam Prep</span><span>2nd Year</span></div>
-          </div>
-          <div class="rcf-right">
-            <div class="rcf-size">5.8 MB</div>
-            <div class="rcf-downloads">↓ 211 downloads</div>
-            <button class="btn-clay btn-clay--lilac btn-sm">↓ Download</button>
-          </div>
-        </div>
-
-        <div class="clay-card res-card-full">
-          <div class="rcf-icon" style="background:var(--yellow-light)">📋</div>
-          <div class="rcf-info">
-            <div class="rcf-name">OS Previous Year Questions 2019–2023.pdf</div>
-            <div class="rcf-meta">Uploaded by <strong>Divya S</strong> · 1.2 MB · 1 month ago</div>
-            <div class="rcf-tags"><span>OS</span><span>PYQs</span><span>2nd Year</span></div>
-          </div>
-          <div class="rcf-right">
-            <div class="rcf-size">1.2 MB</div>
-            <div class="rcf-downloads">↓ 389 downloads</div>
-            <button class="btn-clay btn-clay--outline btn-sm">↓ Download</button>
-          </div>
-        </div>
-
-        <div class="clay-card res-card-full">
-          <div class="rcf-icon" style="background:var(--peach-light)">🗂️</div>
-          <div class="rcf-info">
-            <div class="rcf-name">Computer Networks — TCP/IP Cheatsheet.pdf</div>
-            <div class="rcf-meta">Uploaded by <strong>Karthik R</strong> · 0.8 MB · 2 months ago</div>
-            <div class="rcf-tags"><span>Networks</span><span>Cheatsheet</span><span>3rd Year</span></div>
-          </div>
-          <div class="rcf-right">
-            <div class="rcf-size">0.8 MB</div>
-            <div class="rcf-downloads">↓ 174 downloads</div>
-            <button class="btn-clay btn-clay--outline btn-sm">↓ Download</button>
-          </div>
-        </div>
-
-        <div class="clay-card res-card-full">
-          <div class="rcf-icon" style="background:var(--mint-light)">📐</div>
-          <div class="rcf-info">
-            <div class="rcf-name">Discrete Mathematics — Complete Formula Sheet.pdf</div>
-            <div class="rcf-meta">Uploaded by <strong>Priya Venkat</strong> · 1.9 MB · 3 months ago</div>
-            <div class="rcf-tags"><span>Maths</span><span>Cheatsheet</span><span>1st Year</span></div>
-          </div>
-          <div class="rcf-right">
-            <div class="rcf-size">1.9 MB</div>
-            <div class="rcf-downloads">↓ 267 downloads</div>
-            <button class="btn-clay btn-clay--sage btn-sm">↓ Download</button>
-          </div>
-        </div>
+        {% endfor %}
       </div>
     </div>
   </div>

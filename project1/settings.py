@@ -19,6 +19,12 @@ load_dotenv()
 UPSTASH_REDIS_URL = os.getenv('UPSTASH_REDIS_URL', 'redis://localhost:6379')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
+# AWS S3 Settings
+AWS_ACCESS_KEY_ID = 'AKIA5RD6B5GPLYBZWIOX'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'django-campusonnect'
+AWS_S3_REGION_NAME = 'ap-south-2'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

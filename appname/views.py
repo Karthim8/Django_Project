@@ -1,13 +1,18 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 import urllib.request
 import json
+import boto3
+import uuid
+from django.conf import settings
+from django.contrib import messages
+from .models import Resource, Tag
+
 
 def index(request):
     return render(request, "index.html")
 
 def chat_view(request):
     return render(request, "chat.html")
-
 
 def rooms_view(request):
     return render(request, "rooms.html")
@@ -90,7 +95,91 @@ def profile_view(request):
     })
 
 def resources_view(request):
-    return render(request, "resources.html")
+    if request.method == "POST" and request.user.is_authenticated:
+        uploaded_file = request.FILES.get('resource_file')
+        title = request.POST.get('title')
+        subject = request.POST.get('subject')
+        semester = request.POST.get('semester')
+        
+        if uploaded_file and title and subject:
+            ext = uploaded_file.name.split('.')[-1]
+            s3_key = f"resources/{uuid.uuid4().hex}.{ext}"
+            
+            from botocore.client import Config
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME,
+                config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'})
+            )
+            
+            try:
+                s3_client.upload_fileobj(
+                    uploaded_file,
+                    settings.AWS_STORAGE_BUCKET_NAME,
+                    s3_key,
+                    ExtraArgs={'ContentType': uploaded_file.content_type}
+                )
+                
+                # Construct the S3 URL
+                file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_key}"
+                
+                sem_val = None
+                if semester and "Year" in semester:
+                    # Extracts number from "1st Year", "2nd Year" if they match semester logical names (or just keep 1-4 for now)
+                    # The models expecting choices 1-8. Let's map "1st Year" -> 1 (or 1st sem)
+                    digits = [int(s) for s in semester if s.isdigit()]
+                    if digits: sem_val = digits[0]
+                elif semester and semester.isdigit():
+                    sem_val = int(semester)
+                
+                resource = Resource.objects.create(
+                    title=title,
+                    file_url=file_url,
+                    subject=subject,
+                    semester=sem_val,
+                    uploader=request.user
+                )
+
+                messages.success(request, "Resource uploaded successfully to AWS S3!")
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f"Failed to upload to S3: {e}")
+        else:
+            messages.error(request, "File, title, and subject are required.")
+            
+        return redirect('resources')
+
+    resources_list = list(Resource.objects.all().order_by('-upload_date'))
+    
+    # Generate presigned URLs for each resource
+    from botocore.client import Config
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME,
+        config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'})
+    )
+    bucket_url_prefix = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/"
+    
+    for res in resources_list:
+        if res.file_url and res.file_url.startswith(bucket_url_prefix):
+            try:
+                s3_key = res.file_url[len(bucket_url_prefix):]
+                res.presigned_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': s3_key},
+                    ExpiresIn=3600 # 1 hour
+                )
+            except Exception:
+                res.presigned_url = res.file_url
+        else:
+            res.presigned_url = res.file_url
+            
+    return render(request, "resources.html", {"resources": resources_list})
 
 def dashboard_view(request):
     if not request.user.is_authenticated:
