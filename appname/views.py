@@ -122,6 +122,20 @@ def follow_action(request):
         if action == 'request':
             target_user = User.objects.get(id=user_id)
             Follow.objects.get_or_create(follower=request.user, following=target_user, status='pending')
+            
+            # Broadcast real-time notification
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"notify_{target_user.id}",
+                {
+                    "type": "notification_update",
+                    "category": "follow",
+                    "count_update": 1
+                }
+            )
+
             messages.success(request, f"Follow request sent to {target_user.username}!")
             
         elif action == 'accept':

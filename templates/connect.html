@@ -46,9 +46,9 @@
     <ul class="nav-links">
       <li><a href="{% url 'index' %}">Home</a></li>
       <li><a href="{% url 'resources' %}">Resources</a></li>
-      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
-      <li><a href="{% url 'connect' %}" class="active">Connect</a></li>
+      <li><a href="{% url 'connect' %}" class="active nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
       <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
       <li><a href="{% url 'profile' %}">Profile</a></li>
@@ -89,6 +89,43 @@
 
     <!-- MAIN -->
     <div class="connect-main">
+      
+      <!-- Pending requests (Prominent at top) -->
+      {% if pending_requests %}
+      <div class="clay-card pending-card reveal" style="margin-bottom: 30px; border-left: 5px solid var(--rust);">
+        <h4 style="padding: 15px 20px 10px; border-bottom: 1.1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+          <span style="display: flex; align-items: center; gap: 8px;">🔔 Pending Follow Requests <span style="background:var(--rust);color:white;font-size:10px;padding:2px 7px;border-radius:100px;">{{ pending_requests|length }}</span></span>
+        </h4>
+        <div style="padding: 10px 20px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+          {% for req in pending_requests %}
+          <div class="pending-item" style="border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; background: var(--chalk-warm);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+              <div class="pi-av" style="background:var(--rust); width: 34px; height: 34px; font-size: 11px;">{{ req.follower.first_name|first|upper }}{{ req.follower.last_name|first|upper }}</div>
+              <div class="pi-info">
+                <div class="pi-name" style="font-size: 13px;">{{ req.follower.get_full_name|default:req.follower.username }}</div>
+                <div class="pi-meta" style="font-size: 10px;">{{ req.follower.profile.branch|default:"Student" }} · {{ req.follower.profile.college|default:"Anna University" }}</div>
+              </div>
+            </div>
+            <div class="pi-actions" style="margin: 0; display: flex; gap: 8px; justify-content: flex-end;">
+              <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ req.follower.id }}">
+                <input type="hidden" name="action" value="accept">
+                <button type="submit" class="btn-clay btn-clay--sage btn-sm" style="padding: 5px 15px;">Accept</button>
+              </form>
+              <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ req.follower.id }}">
+                <input type="hidden" name="action" value="decline">
+                <button type="submit" class="btn-clay btn-clay--outline btn-sm" style="padding: 5px 15px;">Decline</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <div class="connect-toolbar reveal">
         <div class="connect-search">
           <span>🔍</span>
@@ -161,35 +198,6 @@
 
     <!-- SIDEBAR -->
     <aside class="connect-sidebar">
-      <!-- Pending requests -->
-      <div class="clay-card pending-card reveal">
-        <h4>Pending requests <span style="background:var(--rust);color:white;font-size:10px;padding:2px 7px;border-radius:100px;margin-left:6px">{{ pending_requests|length }}</span></h4>
-        {% for req in pending_requests %}
-        <div class="pending-item">
-          <div class="pi-av" style="background:var(--rust)">{{ req.follower.first_name|first|upper }}{{ req.follower.last_name|first|upper }}</div>
-          <div class="pi-info">
-            <div class="pi-name">{{ req.follower.get_full_name|default:req.follower.username }}</div>
-            <div class="pi-meta">{{ req.follower.profile.college|default:"Student" }} · wants to connect</div>
-          </div>
-          <div class="pi-actions">
-            <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
-              {% csrf_token %}
-              <input type="hidden" name="user_id" value="{{ req.follower.id }}">
-              <input type="hidden" name="action" value="accept">
-              <button type="submit" class="pi-accept" title="Accept">✓</button>
-            </form>
-            <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
-              {% csrf_token %}
-              <input type="hidden" name="user_id" value="{{ req.follower.id }}">
-              <input type="hidden" name="action" value="decline">
-              <button type="submit" class="pi-decline" title="Decline">✕</button>
-            </form>
-          </div>
-        </div>
-        {% empty %}
-        <p style="font-size:12px;color:var(--muted);padding:10px 0;">No pending requests.</p>
-        {% endfor %}
-      </div>
 
       <!-- Suggestions -->
       <div class="clay-card suggest-card reveal">
@@ -234,6 +242,7 @@
   <div class="footer-bottom"><span>© 2026 NexusLink.</span><span>Made with ♥ in Tamil Nadu</span></div>
 </footer>
 <script src="{% static 'app.js' %}"></script>
+<script src="{% static 'notifications.js' %}"></script>
 <script>
 function followPeer(btn){
   btn.textContent = btn.textContent==='Follow' ? '✓ Requested' : 'Follow';

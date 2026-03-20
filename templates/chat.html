@@ -466,9 +466,9 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
       <ul class="nav-links">
         <li><a href="{% url 'index' %}">Home</a></li>
         <li><a href="{% url 'resources' %}">Resources</a></li>
-        <li><a href="{% url 'chat' %}" class="active">Chat</a></li>
+        <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
         <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
-        <li><a href="{% url 'connect' %}">Connect</a></li>
+        <li><a href="{% url 'connect' %}" class="nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a></li>
         <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
         <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
         <li><a href="{% url 'profile' %}">Profile</a></li>
@@ -663,6 +663,7 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
 </div><!-- end app -->
 
 <script src="{% static 'app.js' %}"></script>
+<script src="{% static 'notifications.js' %}"></script>
 <script>
 /* ─── WebSocket state ─── */
 const CURRENT_USER_ID  = {{ user.id|default:0 }};
@@ -745,13 +746,21 @@ function connectWebSocket(type, id) {
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
     const msgType = data.type || '';
-    if (msgType === 'chat_message' || msgType === 'room_message') {
+    const targetId = type === 'chat' ? 'dm-messages' : 'room-messages';
+
+    if (msgType === 'history') {
+      const container = document.getElementById(targetId);
+      container.innerHTML = '<div class="date-sep">Earlier Messages</div>';
+      data.messages.forEach(m => {
+        appendMessage(targetId, m.message, m.initials, m.sender, m.sender_id === CURRENT_USER_ID, m.timestamp);
+      });
+      container.scrollTop = container.scrollHeight;
+    } 
+    else if (msgType === 'chat_message' || msgType === 'room_message') {
       const isOwn = data.sender_id === CURRENT_USER_ID;
-      const targetId = type === 'chat' ? 'dm-messages' : 'room-messages';
       appendMessage(targetId, data.message, data.initials || data.sender.substring(0,2).toUpperCase(), data.sender, isOwn, data.timestamp);
     }
   };
-
   socket.onclose  = () => { console.warn(`WS closed: ${type}/${id}`); };
   socket.onerror  = (e) => { console.error('WS error', e); };
 }

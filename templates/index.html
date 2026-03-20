@@ -48,9 +48,9 @@
     <ul class="nav-links">
       <li><a href="{% url 'index' %}">Home</a></li>
       <li><a href="{% url 'resources' %}">Resources</a></li>
-      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
-      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'connect' %}" class="nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
       <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
       <li><a href="{% url 'profile' %}">Profile</a></li>
@@ -224,5 +224,6 @@
 </footer>
 
 <script src="{% static 'app.js' %}"></script>
+<script src="{% static 'notifications.js' %}"></script>
 </body>
 </html>

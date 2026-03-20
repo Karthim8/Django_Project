@@ -46,9 +46,10 @@ td { font-size: 14px; font-weight: 600; color: var(--ink); }
       <span>NexusLink</span>
     </a>
     <div class="nav-links">
-      <a href="{% url 'chat' %}">Rooms</a>
+      <a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a>
+      <a href="{% url 'rooms' %}">Rooms</a>
       <a href="{% url 'resources' %}">Resources</a>
-      <a href="{% url 'connect' %}">Connect</a>
+      <a href="{% url 'connect' %}" class="nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a>
       <a href="{% url 'dashboard' %}" style="color:var(--rust)">Dashboard</a>
     </div>
     <div class="nav-actions">
@@ -328,5 +329,6 @@ cal.paint({
 });
 {% endif %}
 </script>
+<script src="{% static 'notifications.js' %}"></script>
 </body>
 </html>

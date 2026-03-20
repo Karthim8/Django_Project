@@ -45,9 +45,9 @@
     <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
     <ul class="nav-links">
       <li><a href="{% url 'resources' %}" class="active">Resources</a></li>
-      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
-      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'connect' %}" class="nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
       <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
       <li><a href="{% url 'profile' %}">Profile</a></li>
@@ -207,6 +207,7 @@
   <div class="footer-bottom"><span>© 2026 NexusLink.</span><span>Made with ♥ in Tamil Nadu</span></div>
 </footer>
 <script src="{% static 'app.js' %}"></script>
+<script src="{% static 'notifications.js' %}"></script>
 <script>
 document.querySelectorAll('.filter-chip').forEach(chip=>{
   chip.addEventListener('click',function(){
