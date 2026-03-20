@@ -257,6 +257,15 @@ def profile_view(request):
     })
 
 def resources_view(request):
+    from botocore.client import Config
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME,
+        config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'})
+    )
+
     if request.method == "POST" and request.user.is_authenticated:
         uploaded_file = request.FILES.get('resource_file')
         title = request.POST.get('title')
@@ -266,15 +275,6 @@ def resources_view(request):
         if uploaded_file and title and subject:
             ext = uploaded_file.name.split('.')[-1]
             s3_key = f"resources/{uuid.uuid4().hex}.{ext}"
-            
-            from botocore.client import Config
-            s3_client = boto3.client(
-                's3',
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                region_name=settings.AWS_S3_REGION_NAME,
-                config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'})
-            )
             
             try:
                 s3_client.upload_fileobj(
@@ -289,14 +289,12 @@ def resources_view(request):
                 
                 sem_val = None
                 if semester and "Year" in semester:
-                    # Extracts number from "1st Year", "2nd Year" if they match semester logical names (or just keep 1-4 for now)
-                    # The models expecting choices 1-8. Let's map "1st Year" -> 1 (or 1st sem)
                     digits = [int(s) for s in semester if s.isdigit()]
                     if digits: sem_val = digits[0]
                 elif semester and semester.isdigit():
                     sem_val = int(semester)
                 
-                resource = Resource.objects.create(
+                Resource.objects.create(
                     title=title,
                     file_url=file_url,
                     subject=subject,
@@ -314,17 +312,35 @@ def resources_view(request):
             
         return redirect('resources')
 
+    # Sync with S3: Check for files in bucket that aren't in DB
+    try:
+        response = s3_client.list_objects_v2(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Prefix='resources/')
+        if 'Contents' in response:
+            # Find a system user to act as uploader for synced files
+            system_user = User.objects.filter(is_superuser=True).first() or User.objects.first()
+            
+            if system_user:
+                for obj in response['Contents']:
+                    s3_key = obj['Key']
+                    if not s3_key or s3_key == 'resources/': continue
+                    
+                    # Check if this exact file exists in DB
+                    file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_key}"
+                    if not Resource.objects.filter(file_url=file_url).exists():
+                        # Auto-create resource entry
+                        filename = s3_key.split('/')[-1]
+                        Resource.objects.create(
+                            title=filename,
+                            file_url=file_url,
+                            subject="Uncategorized",
+                            uploader=system_user,
+                            description="Automatically synced from S3 storage."
+                        )
+    except Exception as e:
+        print(f"S3 Sync Error: {e}")
+
+    # Re-fetch the list after sync
     resources_list = list(Resource.objects.all().order_by('-upload_date'))
-    
-    # Generate presigned URLs for each resource
-    from botocore.client import Config
-    s3_client = boto3.client(
-        's3',
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        region_name=settings.AWS_S3_REGION_NAME,
-        config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'})
-    )
     bucket_url_prefix = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/"
     
     for res in resources_list:
