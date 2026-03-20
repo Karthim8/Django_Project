@@ -106,7 +106,7 @@ def assign_badges(data):
 def build_commit_map(repos, github_user):
     commit_map = {}
     since = datetime.now(timezone.utc) - timedelta(days=365)
-    for repo in repos[:15]:
+    for repo in repos:
         if repo.fork: continue
         try:
             commits = repo.get_commits(author=github_user, since=since)
@@ -165,11 +165,16 @@ def evaluate_github_profile(user_id):
         all_commits = []
         recent_commits_count = 0
         prs_merged = 0
+        total_commits_count = 0
 
-        for repo in non_forked[:10]:
+        for repo in non_forked:
             try:
-                time.sleep(0.1) # Safe rate limiting as requested
-                commits = list(repo.get_commits(author=github_user)[:100])
+                time.sleep(0.05) # Safe rate limiting as requested
+                paginated_commits = repo.get_commits(author=github_user)
+                try: total_commits_count += paginated_commits.totalCount
+                except: pass
+
+                commits = list(paginated_commits[:100])
                 all_commits.extend(commits)
                 for c in commits:
                     days_ago = (datetime.now(timezone.utc) - c.commit.author.date).days
@@ -197,20 +202,32 @@ def evaluate_github_profile(user_id):
         push_update(username, "🌍 Checking OSS contributions...", 55)
 
         notable_contributions = []
-        for event in github_user.get_events()[:100]:
-            if event.type == "PullRequestEvent":
+        try:
+            query = f"author:{username} is:pr is:merged"
+            prs = g.search_issues(query=query)
+            
+            try:
+                prs_merged = prs.totalCount
+            except:
+                pass
+            
+            for pr in prs[:30]:  # Limit deep inspection to recent 30 to save rate limits
                 try:
-                    full_repo = g.get_repo(event.repo.name)
-                    stars = full_repo.stargazers_count
-                    merged = event.payload.get('pull_request', {}).get('merged', False)
-                    if stars >= 1000:
-                        notable_contributions.append({"repo": event.repo.name,"stars": stars,"merged": merged})
-                        if merged: prs_merged += 1
-                except: pass
+                    repo = g.get_repo(pr.repository.full_name)
+                    stars = repo.stargazers_count
+                    if stars >= 10:
+                        notable_contributions.append({"repo": pr.repository.full_name, "stars": stars, "merged": True})
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
         push_update(username, "🗓️ Building activity heatmap...", 65)
 
         commit_map = build_commit_map(non_forked, github_user)
+
+        recent_repos = sorted(non_forked, key=lambda x: x.pushed_at or x.updated_at or x.created_at, reverse=True)[:5]
+        recent_projects = [{"name": r.name, "url": r.html_url, "stars": r.stargazers_count, "description": r.description} for r in recent_repos]
 
         badge_data = {
             "notable_contributions": notable_contributions,
@@ -222,10 +239,13 @@ def evaluate_github_profile(user_id):
         badges = assign_badges(badge_data)
 
         account_age_months = (datetime.now(timezone.utc) - github_user.created_at).days // 30
-        profile.total_repos           = len(non_forked)
+        profile.total_repos           = len(repos)
+        profile.total_commits         = total_commits_count
         profile.total_stars_received  = total_stars
         profile.languages_used        = languages
         profile.notable_contributions = notable_contributions
+        profile.recent_projects       = recent_projects
+        profile.total_prs_merged      = prs_merged
         profile.commit_streak         = streak
         profile.account_age_months    = account_age_months
         profile.commit_map            = commit_map
@@ -257,9 +277,10 @@ Data:
 - Suspicious flags: {json.dumps(cheat_result['cheat_flags'])}
 
 Rules:
-- Merged PR to 100k+ star repo → massive OSS score boost
-- spam_ratio > 0.6 → reduce consistency_score by 25-35 points
-- Return ONLY valid JSON, no markdown, no explanation
+- Merged PR to 10k+ star repo → massive OSS score boost
+- spam_ratio > 0.6 → reduce consistency_score heavily
+- Return ONLY valid JSON.
+- CRITICAL: NO trailing commas allowed. All property names must be in double quotes.
 
 {{
   "overall_score": 0-100,
@@ -275,13 +296,20 @@ Rules:
   "summary": "2 sentences"
 }}
 """
-        response = model.generate_content(prompt)
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
         text = response.text.strip()
         if text.startswith('```json'): text = text[7:]
         elif text.startswith('```'): text = text[3:]
         if text.endswith('```'): text = text[:-3]
         
-        result = json.loads(text.strip())
+        try:
+            result = json.loads(text.strip())
+        except json.JSONDecodeError as err:
+            print("AI Output was:", text)
+            raise Exception(f"AI returned invalid JSON: {err}")
 
         profile.overall_score         = result.get('overall_score', 0)
         profile.rank_title            = result.get('rank_title', 'Unranked')

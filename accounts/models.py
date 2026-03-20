@@ -57,6 +57,7 @@ class DeveloperProfile(models.Model):
     total_prs_merged     = models.IntegerField(default=0)
     languages_used       = models.JSONField(default=dict)
     notable_contributions= models.JSONField(default=list)
+    recent_projects      = models.JSONField(default=list)
     commit_streak        = models.IntegerField(default=0)
     account_age_months   = models.IntegerField(default=0)
     commit_map           = models.JSONField(default=dict)  # heatmap data

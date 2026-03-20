@@ -159,6 +159,24 @@ td { font-size: 14px; font-weight: 600; color: var(--ink); }
     </div>
   </div>
 
+  <!-- Recent Projects -->
+  <div class="section-card" style="margin-bottom:24px;">
+    <h3 class="section-title">Recent Projects</h3>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      {% for repo in profile.recent_projects %}
+        <div style="padding:16px; border:1px solid #e5e7eb; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <a href="{{ repo.url }}" target="_blank" style="font-weight:700; color:var(--nexus-blue); text-decoration:none;">{{ repo.name }}</a>
+            <p style="margin:4px 0 0 0; font-size:13px; color:var(--muted);">{{ repo.description|default:"No description provided." }}</p>
+          </div>
+          <div style="font-size:14px; font-weight:600; color:var(--rust);">⭐ {{ repo.stars }}</div>
+        </div>
+      {% empty %}
+        <div style="color:var(--muted); font-size:14px;">No recent projects available.</div>
+      {% endfor %}
+    </div>
+  </div>
+
   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:24px;">
     <!-- Radar Chart -->
     <div class="section-card">
