@@ -79,7 +79,12 @@
               <span class="rpc-subject-pill" style="background:var(--mint-light);color:var(--sage)">Python 3</span>
               <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
             </div>
-            <div class="rpc-name" style="font-size:24px; margin-bottom:8px;">{{ problem.title }}</div>
+            <div class="rpc-name" style="font-size:24px; margin-bottom:8px; display:flex; align-items:center; gap:12px;">
+              {{ problem.title }}
+              {% if problem.id in solved_problem_ids %}
+              <span style="font-size:12px; font-weight:700; background:var(--mint-mid); color:white; padding:4px 10px; border-radius:20px; box-shadow:var(--clay-shadow);">✓ Solved</span>
+              {% endif %}
+            </div>
             <div class="rpc-desc">{{ problem.description|truncatewords:20 }}</div>
           </div>
           <div>
@@ -93,6 +98,25 @@
         {% endfor %}
       </div>
     </div>
+
+    <!-- SIDEBAR -->
+    <aside class="rooms-sidebar">
+      <div class="clay-card active-rooms-widget reveal">
+        <h4 style="font-family:var(--font-heading); color:var(--ink);">🏆 Global Leaderboard</h4>
+        {% for lb_user in leaderboard %}
+        <div class="arw-item" style="align-items:center;">
+          <div class="arw-dot" style="background:var(--mint-mid); box-shadow:none;"></div>
+          <div class="arw-info" style="flex:1;">
+            <div class="arw-name" style="font-size:15px;">{{ lb_user.username }}</div>
+            <div class="arw-count" style="color:var(--sage); font-weight:700;">{{ lb_user.solved_count }} Solved</div>
+          </div>
+          <div style="font-size:16px; font-weight:800; color:var(--muted);">#{{ forloop.counter }}</div>
+        </div>
+        {% empty %}
+        <div style="font-size:13px; color:var(--muted); margin-top:8px;">No one has successfully solved a problem yet! Be the first!</div>
+        {% endfor %}
+      </div>
+    </aside>
   </div>
 </div>
 

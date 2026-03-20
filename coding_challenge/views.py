@@ -9,6 +9,9 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf   import csrf_exempt
 from channels.layers                import get_channel_layer
 from asgiref.sync                   import async_to_sync
+from django.db.models               import Max, Count, Q
+from django.contrib.auth            import get_user_model
+
 from .models                        import Problem, Submission
 from .judge0                        import judge_submission
 
@@ -51,7 +54,21 @@ def get_leaderboard(problem_id: int) -> list:
 
 def problem_list(request):
     problems = Problem.objects.all().order_by("-created_at")
-    return render(request, "coding_challenge/problem_list.html", {"problems": problems})
+    
+    solved_problem_ids = []
+    if request.user.is_authenticated:
+        solved_problem_ids = set(Submission.objects.filter(student=request.user, status='accepted').values_list('problem_id', flat=True))
+        
+    User = get_user_model()
+    leaderboard = User.objects.annotate(
+        solved_count=Count('cc_submissions__problem', filter=Q(cc_submissions__status='accepted'), distinct=True)
+    ).filter(solved_count__gt=0).order_by('-solved_count')[:10]
+
+    return render(request, "coding_challenge/problem_list.html", {
+        "problems": problems,
+        "solved_problem_ids": solved_problem_ids,
+        "leaderboard": leaderboard
+    })
 
 
 def problem_detail(request, problem_id: int):
