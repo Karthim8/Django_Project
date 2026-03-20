@@ -347,9 +347,14 @@ def resources_view(request):
         if res.file_url and res.file_url.startswith(bucket_url_prefix):
             try:
                 s3_key = res.file_url[len(bucket_url_prefix):]
+                filename = s3_key.split('/')[-1]
                 res.presigned_url = s3_client.generate_presigned_url(
                     'get_object',
-                    Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': s3_key},
+                    Params={
+                        'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 
+                        'Key': s3_key,
+                        'ResponseContentDisposition': f'attachment; filename="{filename}"'
+                    },
                     ExpiresIn=3600 # 1 hour
                 )
             except Exception:
