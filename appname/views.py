@@ -5,17 +5,79 @@ import boto3
 import uuid
 from django.conf import settings
 from django.contrib import messages
-from .models import Resource, Tag
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from .models import Resource, Tag, Conversation, Message, StudyRoom, RoomMembership
 
 
 def index(request):
     return render(request, "index.html")
 
+@login_required
 def chat_view(request):
-    return render(request, "chat.html")
+    # Fetch user's conversations and pre-compute other_user for each
+    convs_qs = Conversation.objects.filter(
+        Q(user_a=request.user) | Q(user_b=request.user)
+    ).order_by('-updated_at').select_related('user_a', 'user_b').prefetch_related('messages')
 
+    # Attach other_user attribute so the template can use {{ conv.other }}
+    conversations = []
+    for conv in convs_qs:
+        conv.other = conv.user_b if conv.user_a == request.user else conv.user_a
+        conversations.append(conv)
+
+    # Study rooms this user is a member of
+    my_rooms = StudyRoom.objects.filter(
+        memberships__user=request.user, is_active=True
+    ).distinct()
+
+    return render(request, "chat.html", {
+        "conversations": conversations,
+        "my_rooms": my_rooms,
+    })
+
+@login_required
 def rooms_view(request):
-    return render(request, "rooms.html")
+    if request.method == "POST":
+        action = request.POST.get('action')
+        if action == 'create':
+            name = request.POST.get('name')
+            subject = request.POST.get('subject')
+            desc = request.POST.get('description', '')
+            pw = request.POST.get('password', '')
+            
+            if name and subject:
+                room = StudyRoom.objects.create(
+                    name=name,
+                    subject=subject,
+                    description=desc,
+                    password_hash=pw, # in prod, actually hash it
+                    host=request.user
+                )
+                RoomMembership.objects.create(room=room, user=request.user)
+                return redirect('rooms')
+        elif action == 'join':
+            room_id = request.POST.get('room_id')
+            pw = request.POST.get('password', '')
+            try:
+                room = StudyRoom.objects.get(id=room_id)
+                if room.password_hash and room.password_hash != pw:
+                    messages.error(request, "Incorrect password.")
+                else:
+                    RoomMembership.objects.get_or_create(room=room, user=request.user)
+                    messages.success(request, f"Joined {room.name}!")
+            except StudyRoom.DoesNotExist:
+                pass
+            return redirect('rooms')
+
+    all_rooms = StudyRoom.objects.filter(is_active=True).order_by('-created_at')
+    my_room_ids = list(RoomMembership.objects.filter(user=request.user).values_list('room_id', flat=True))
+    
+    return render(request, "rooms.html", {
+        "all_rooms": all_rooms,
+        "my_room_ids": my_room_ids
+    })
 
 def connect_view(request):
     return render(request, "connect.html")

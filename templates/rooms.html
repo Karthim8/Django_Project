@@ -94,7 +94,7 @@
     <!-- MAIN -->
     <div class="rooms-main">
       <div class="rooms-toolbar reveal">
-        <h2>Active Rooms <span style="font-size:14px;color:var(--muted);font-weight:400">(12 live)</span></h2>
+        <h2>Active Rooms <span style="font-size:14px;color:var(--muted);font-weight:400">({{ all_rooms.count }} live)</span></h2>
         <div class="rooms-filter-tabs">
           <button class="rft active" onclick="filterRooms(this,'all')">All</button>
           <button class="rft" onclick="filterRooms(this,'dsa')">DSA</button>
@@ -105,119 +105,76 @@
       </div>
 
       <div class="rooms-page-grid">
-        <div class="clay-card room-page-card reveal">
+        {% if messages %}
+        {% for msg in messages %}
+        <div style="grid-column:1/-1;padding:12px 16px;border-radius:10px;background:{% if 'error' in msg.tags %}var(--rust-light){% else %}var(--mint-light){% endif %};font-size:13px;font-weight:600;">{{ msg }}</div>
+        {% endfor %}
+        {% endif %}
+        {% for room in all_rooms %}
+        <div class="clay-card room-page-card reveal" data-subject="{{ room.subject|lower }}">
           <div class="rpc-top">
-            <span class="rpc-subject-pill" style="background:var(--rust-light);color:var(--rust)">DSA</span>
+            <span class="rpc-subject-pill" style="background:var(--rust-light);color:var(--rust)">{{ room.subject }}</span>
             <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
           </div>
-          <div class="rpc-name">Graph Theory Marathon</div>
-          <div class="rpc-desc">Deep dive into BFS, DFS, Dijkstra, and Bellman-Ford. Interview-focused with problem solving.</div>
+          <div class="rpc-name">{{ room.name }}</div>
+          <div class="rpc-desc">{{ room.description|default:"Join to study together!"|truncatechars:100 }}</div>
           <div class="rpc-host-row">
-            <div class="rpc-host-av" style="background:var(--rust)">A</div>
-            <div><div class="rpc-host-name">Anjali Kumar</div><div class="rpc-host-role">Google SWE Intern</div></div>
+            <div class="rpc-host-av" style="background:var(--rust)">{{ room.host.first_name|first|upper }}{{ room.host.last_name|first|upper }}</div>
+            <div><div class="rpc-host-name">{{ room.host.get_full_name|default:room.host.username }}</div><div class="rpc-host-role">Host</div></div>
           </div>
           <div class="rpc-members-row">
-            <div class="ra" style="background:var(--rust)">A</div>
-            <div class="ra" style="background:var(--mint-mid)">P</div>
-            <div class="ra" style="background:var(--lilac-mid)">M</div>
-            <div class="ra" style="background:var(--yellow-mid)">K</div>
-            <span class="rpc-count-lbl">+4 studying now</span>
+            {% for m in room.memberships.all|slice:":4" %}
+            <div class="ra" style="background:var(--rust)">{{ m.user.first_name|first|upper }}</div>
+            {% endfor %}
+            <span class="rpc-count-lbl">+{{ room.memberships.count }} studying now</span>
           </div>
           <div class="rpc-footer">
-            <button class="btn-clay btn-clay--rust" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
-            <div class="rpc-info">🕐 Started 40 min ago</div>
+            {% if room.id in my_room_ids %}
+            <a href="{% url 'chat' %}" class="btn-clay btn-clay--sage" style="flex:1;text-align:center;">💬 Open chat</a>
+            {% elif room.password_hash %}
+            <button class="btn-clay btn-clay--rust" style="flex:1" onclick="askJoin('{{ room.id }}','{{ room.name|escapejs }}')">🔐 Join room</button>
+            {% else %}
+            <button class="btn-clay btn-clay--rust" style="flex:1" onclick="joinRoom('{{ room.id }}','')">➡️ Join room</button>
+            {% endif %}
+            <div class="rpc-info">🕐 {{ room.created_at|timesince }} ago</div>
           </div>
         </div>
-
-        <div class="clay-card room-page-card reveal">
-          <div class="rpc-top">
-            <span class="rpc-subject-pill" style="background:var(--mint-light);color:var(--sage)">Web Dev</span>
-            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
-          </div>
-          <div class="rpc-name">Django Channels Deep Dive</div>
-          <div class="rpc-desc">Building real-time features with Django Channels and WebSockets from scratch.</div>
-          <div class="rpc-host-row">
-            <div class="rpc-host-av" style="background:var(--lilac-mid)">P</div>
-            <div><div class="rpc-host-name">Priya Venkat</div><div class="rpc-host-role">CSE · PSG Tech</div></div>
-          </div>
-          <div class="rpc-members-row">
-            <div class="ra" style="background:var(--lilac-mid)">P</div>
-            <div class="ra" style="background:var(--yellow-mid)">K</div>
-            <span class="rpc-count-lbl">+2 studying now</span>
-          </div>
-          <div class="rpc-footer">
-            <button class="btn-clay btn-clay--sage" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
-            <div class="rpc-info">🕐 Started 15 min ago</div>
-          </div>
+        {% empty %}
+        <div class="clay-card reveal" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);">
+          <div style="font-size:40px;margin-bottom:12px;">📭</div>
+          <h3 style="font-family:var(--font-display);">No rooms yet</h3>
+          <p>Be the first to create a study room!</p>
         </div>
-
-        <div class="clay-card room-page-card reveal">
-          <div class="rpc-top">
-            <span class="rpc-subject-pill" style="background:var(--lilac-light);color:var(--lilac-mid)">DBMS</span>
-            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
-          </div>
-          <div class="rpc-name">SQL & Normalization Prep</div>
-          <div class="rpc-desc">Practising complex SQL queries, joins, and normalization for exams and interviews.</div>
-          <div class="rpc-host-row">
-            <div class="rpc-host-av" style="background:var(--yellow-mid)">K</div>
-            <div><div class="rpc-host-name">Karthik R</div><div class="rpc-host-role">IT · Anna University</div></div>
-          </div>
-          <div class="rpc-members-row">
-            <div class="ra" style="background:var(--rust)">K</div>
-            <div class="ra" style="background:var(--lilac-mid)">S</div>
-            <div class="ra" style="background:var(--mint-mid)">A</div>
-            <div class="ra" style="background:var(--yellow-mid)">N</div>
-            <span class="rpc-count-lbl">+8 studying now</span>
-          </div>
-          <div class="rpc-footer">
-            <button class="btn-clay btn-clay--lilac" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
-            <div class="rpc-info">🕐 Started 1 hr ago</div>
-          </div>
-        </div>
-
-        <div class="clay-card room-page-card reveal">
-          <div class="rpc-top">
-            <span class="rpc-subject-pill" style="background:var(--peach-light);color:var(--peach-mid)">OS</span>
-            <span class="pill pill--green"><span class="blink-dot"></span> Live</span>
-          </div>
-          <div class="rpc-name">Process Scheduling & Memory</div>
-          <div class="rpc-desc">Covering scheduling algorithms, paging, segmentation, and virtual memory concepts.</div>
-          <div class="rpc-host-row">
-            <div class="rpc-host-av" style="background:var(--peach-mid)">D</div>
-            <div><div class="rpc-host-name">Divya S</div><div class="rpc-host-role">CSE · NIT Trichy</div></div>
-          </div>
-          <div class="rpc-members-row">
-            <div class="ra" style="background:var(--peach-mid)">D</div>
-            <div class="ra" style="background:var(--mint-mid)">R</div>
-            <span class="rpc-count-lbl">+3 studying now</span>
-          </div>
-          <div class="rpc-footer">
-            <button class="btn-clay btn-clay--outline" style="flex:1" onclick="joinRoom()">🔐 Join room</button>
-            <div class="rpc-info">🕐 Started 25 min ago</div>
-          </div>
-        </div>
+        {% endfor %}
       </div>
     </div>
 
-    <!-- SIDEBAR -->
     <aside class="rooms-sidebar">
       <div class="clay-card create-room-card reveal" id="create-section">
         <h3>Create a room</h3>
-        <div class="form-field"><label>Room name</label><input type="text" placeholder="e.g. Graph Theory Marathon"></div>
-        <div class="form-field"><label>Subject</label>
-          <select><option>DSA</option><option>DBMS</option><option>OS</option><option>Networks</option><option>Web Dev</option><option>System Design</option></select>
-        </div>
-        <div class="form-field"><label>Description</label><textarea placeholder="What will you study in this room?"></textarea></div>
-        <div class="form-field password-field"><label>Room password</label><input type="password" placeholder="Set a password for entry" id="room-pw"><span class="pw-eye" onclick="togglePw()">👁</span></div>
-        <div class="form-field"><label>Max members</label><select><option>5</option><option>10</option><option>15</option><option>20</option></select></div>
-        <button class="btn-clay btn-clay--rust" style="width:100%">Create room</button>
+        <form method="POST" action="{% url 'rooms' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <div class="form-field"><label>Room name</label><input type="text" name="name" placeholder="e.g. Graph Theory Marathon" required></div>
+          <div class="form-field"><label>Subject</label>
+            <select name="subject"><option>DSA</option><option>DBMS</option><option>OS</option><option>Networks</option><option>Web Dev</option><option>System Design</option></select>
+          </div>
+          <div class="form-field"><label>Description</label><textarea name="description" placeholder="What will you study in this room?"></textarea></div>
+          <div class="form-field password-field"><label>Room password</label><input type="password" name="password" placeholder="Leave blank for open room" id="room-pw"><span class="pw-eye" onclick="togglePw()">👁</span></div>
+          <div class="form-field"><label>Max members</label><select name="max_members"><option>5</option><option>10</option><option>15</option><option>20</option></select></div>
+          <button type="submit" class="btn-clay btn-clay--rust" style="width:100%">Create room</button>
+        </form>
       </div>
 
       <div class="clay-card active-rooms-widget reveal">
         <h4>My rooms</h4>
-        <div class="arw-item"><div class="arw-dot"></div><div class="arw-info"><div class="arw-name">Django Channels Deep Dive</div><div class="arw-count">You're the host · 3 members</div></div></div>
-        <div class="arw-item"><div class="arw-dot" style="background:var(--lilac-mid);box-shadow:none"></div><div class="arw-info"><div class="arw-name">Graph Theory Marathon</div><div class="arw-count">Member · 7 members</div></div></div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">You've been in 4 rooms this week 🔥</div>
+        {% for room in all_rooms %}
+        {% if room.id in my_room_ids %}
+        <div class="arw-item"><div class="arw-dot"></div><div class="arw-info"><div class="arw-name">{{ room.name }}</div><div class="arw-count">{% if room.host == user %}You're the host{% else %}Member{% endif %} · {{ room.memberships.count }} members</div></div></div>
+        {% endif %}
+        {% empty %}
+        <p style="font-size:12px;color:var(--muted);">No rooms joined yet.</p>
+        {% endfor %}
       </div>
     </aside>
   </div>
@@ -236,8 +193,27 @@
 </footer>
 <script src="{% static 'app.js' %}"></script>
 <script>
-function joinRoom(){const p=prompt('Enter room password:');if(p)alert('Joining room… Welcome! 🎓');}
+function askJoin(roomId, name) {
+  sessionStorage.setItem('joinRoomId', roomId);
+  if (confirm(`Join "${name}"? Enter password if required.`)) {
+    const pw = prompt('Password (leave blank if open):') || '';
+    joinRoom(roomId, pw);
+  }
+}
+function joinRoom(roomId, pw) {
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = '{% url "rooms" %}';
+  f.innerHTML = `<input name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input name="action" value="join"><input name="room_id" value="${roomId}"><input name="password" value="${pw || ''}">` ;
+  document.body.appendChild(f); f.submit();
+}
 function togglePw(){const i=document.getElementById('room-pw');i.type=i.type==='password'?'text':'password';}
-function filterRooms(el){document.querySelectorAll('.rft').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+function filterRooms(el, tag){
+  document.querySelectorAll('.rft').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.room-page-card').forEach(card=>{
+    const subj = (card.dataset.subject || '').toLowerCase();
+    card.style.display = (tag === 'all' || subj.includes(tag)) ? '' : 'none';
+  });
+}
 </script>
 </body></html>

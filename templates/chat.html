@@ -541,31 +541,18 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
           <button class="lp-tab" onclick="tabActive(this)">Juniors</button>
         </div>
         <div class="lp-list" id="dm-list">
-          <div class="dm-item active" onclick="openDM(this,'Ravi Kumar','RK','var(--rust)')">
-            <div class="dm-av" style="background:var(--rust)">RK<div class="dm-online"></div></div>
-            <div class="dm-info"><div class="dm-name">Ravi Kumar</div><div class="dm-last">Check the DSA PDF I uploaded!</div></div>
-            <div class="dm-meta"><div class="dm-time">2:45 PM</div><div class="dm-badge">2</div></div>
+          {% for conv in conversations %}
+          <div class="dm-item" onclick="openDM(this,'{{ conv.id }}','{{ conv.other.get_full_name|default:conv.other.username }}','{{ conv.other.first_name|first|upper }}{{ conv.other.last_name|first|upper }}')" data-conv-id="{{ conv.id }}">
+            <div class="dm-av" style="background:var(--rust)">{{ conv.other.first_name|first|upper }}{{ conv.other.last_name|first|upper }}</div>
+            <div class="dm-info">
+              <div class="dm-name">{{ conv.other.get_full_name|default:conv.other.username }}</div>
+              <div class="dm-last">{% if conv.messages.last %}{{ conv.messages.last.content|truncatechars:35 }}{% else %}Start chatting!{% endif %}</div>
+            </div>
+            <div class="dm-meta"><div class="dm-time">{{ conv.updated_at|timesince|truncatewords:1 }} ago</div></div>
           </div>
-          <div class="dm-item" onclick="openDM(this,'Anjali Kumar','AK','var(--rust)')">
-            <div class="dm-av" style="background:var(--rust)">AK</div>
-            <div class="dm-info"><div class="dm-name">Anjali Kumar</div><div class="dm-last">Sure, let's connect tomorrow!</div></div>
-            <div class="dm-meta"><div class="dm-time">Yesterday</div></div>
-          </div>
-          <div class="dm-item" onclick="openDM(this,'Mohammed Saleem','MS','var(--mint-mid)')">
-            <div class="dm-av" style="background:var(--mint-mid)">MS<div class="dm-online"></div></div>
-            <div class="dm-info"><div class="dm-name">Mohammed Saleem</div><div class="dm-last">System design is all about trade-offs 🔥</div></div>
-            <div class="dm-meta"><div class="dm-time">Monday</div></div>
-          </div>
-          <div class="dm-item" onclick="openDM(this,'Priya Venkat','PV','var(--lilac-mid)')">
-            <div class="dm-av" style="background:var(--lilac-mid)">PV<div class="dm-online"></div></div>
-            <div class="dm-info"><div class="dm-name">Priya Venkat</div><div class="dm-last">Are you joining the room tonight?</div></div>
-            <div class="dm-meta"><div class="dm-time">Sunday</div><div class="dm-badge">1</div></div>
-          </div>
-          <div class="dm-item" onclick="openDM(this,'Divya S','DS','var(--peach-mid)')">
-            <div class="dm-av" style="background:var(--peach-mid)">DS</div>
-            <div class="dm-info"><div class="dm-name">Divya S</div><div class="dm-last">OS PYQ set is uploaded 📋</div></div>
-            <div class="dm-meta"><div class="dm-time">Last week</div></div>
-          </div>
+          {% empty %}
+          <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">No conversations yet.<br>Connect with peers to start chatting!</div>
+          {% endfor %}
         </div>
       </div>
 
@@ -582,38 +569,16 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
           <button class="lp-tab" onclick="tabActive(this)">Open</button>
         </div>
         <div class="lp-list" id="rooms-list">
-          <div class="room-item active" onclick="openRoom(this,'Graph Theory Marathon','DSA','🧮','var(--rust-light)','var(--rust)','dsa','7 studying')">
-            <div class="ri-top"><div class="ri-name">Graph Theory Marathon</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
-            <span class="ri-tag" style="background:var(--rust-light);color:var(--rust)">DSA</span>
-            <div class="ri-last">Anjali: Let's do Dijkstra next 🔥</div>
-            <div class="ri-members">
-              <div class="ri-av" style="background:var(--rust)">A</div>
-              <div class="ri-av" style="background:var(--mint-mid)">P</div>
-              <div class="ri-av" style="background:var(--lilac-mid)">M</div>
-              <span class="ri-count">7 studying</span>
-            </div>
+          {% for room in my_rooms %}
+          <div class="room-item" onclick="openRoom(this,'{{ room.id }}','{{ room.name }}','{{ room.subject }}')" data-room-id="{{ room.id }}">
+            <div class="ri-top"><div class="ri-name">{{ room.name }}</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
+            <span class="ri-tag" style="background:var(--rust-light);color:var(--rust)">{{ room.subject }}</span>
+            <div class="ri-last">{{ room.description|default:"Study room"|truncatechars:40 }}</div>
+            <div class="ri-members"><span class="ri-count">{{ room.memberships.count }} studying</span></div>
           </div>
-          <div class="room-item" onclick="askJoin(this,'Django Channels Deep Dive')">
-            <div class="ri-top"><div class="ri-name">Django Channels Deep Dive</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
-            <span class="ri-tag" style="background:var(--mint-light);color:var(--sage)">Web Dev</span>
-            <div class="ri-last">Priya: WebSockets are so cool!</div>
-            <div class="ri-members">
-              <div class="ri-av" style="background:var(--lilac-mid)">P</div>
-              <div class="ri-av" style="background:var(--yellow-mid)">K</div>
-              <span class="ri-count">3 studying</span>
-            </div>
-          </div>
-          <div class="room-item" onclick="askJoin(this,'SQL & Normalization Prep')">
-            <div class="ri-top"><div class="ri-name">SQL & Normalization Prep</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
-            <span class="ri-tag" style="background:var(--lilac-light);color:var(--lilac-mid)">DBMS</span>
-            <div class="ri-last">Karthik: Try this query 👇</div>
-            <div class="ri-members">
-              <div class="ri-av" style="background:var(--yellow-mid)">K</div>
-              <div class="ri-av" style="background:var(--rust)">S</div>
-              <div class="ri-av" style="background:var(--mint-mid)">A</div>
-              <span class="ri-count">9 studying</span>
-            </div>
-          </div>
+          {% empty %}
+          <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">No rooms joined yet.<br>Switch to Rooms tab to join one!</div>
+          {% endfor %}
         </div>
       </div>
 
@@ -625,62 +590,22 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
       <!-- Default DM view: Ravi Kumar -->
       <div id="view-dm" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
         <div class="chat-header">
-          <div class="ch-av" id="dm-hdr-av" style="background:var(--rust)">RK</div>
+          <div class="ch-av" id="dm-hdr-av" style="background:var(--rust)">—</div>
           <div class="ch-info">
-            <div class="ch-name" id="dm-hdr-name">Ravi Kumar</div>
-            <div class="ch-sub"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Online · Google SWE Intern</div>
-          </div>
-          <div class="ch-actions">
-            <button class="ch-btn" title="Voice call">📞</button>
-            <button class="ch-btn" title="Video call">📹</button>
-            <button class="ch-btn" title="Share file">📎</button>
+            <div class="ch-name" id="dm-hdr-name">Select a conversation</div>
+            <div class="ch-sub" id="dm-hdr-sub">Choose someone from the list to start chatting</div>
           </div>
         </div>
         <div class="messages-area" id="dm-messages">
-          <div class="date-sep">Today</div>
-          <div class="msg-group">
-            <div class="mg-av" style="background:var(--rust)">RK</div>
-            <div class="mg-bubbles">
-              <div class="mg-sender">Ravi Kumar</div>
-              <div class="mg-bubble">Hey! Saw your follow request. Happy to help with DSA prep 👋</div>
-              <div class="mg-time">2:41 PM</div>
-            </div>
-          </div>
-          <div class="msg-group out">
-            <div class="mg-av" style="background:var(--lilac-mid)">Me</div>
-            <div class="mg-bubbles">
-              <div class="mg-sender">You</div>
-              <div class="mg-bubble">Thanks! Any tips for graph problems?</div>
-              <div class="mg-time">2:42 PM</div>
-            </div>
-          </div>
-          <div class="msg-group">
-            <div class="mg-av" style="background:var(--rust)">RK</div>
-            <div class="mg-bubbles">
-              <div class="mg-sender">Ravi Kumar</div>
-              <div class="mg-bubble">Start with BFS/DFS patterns — they cover 80% of graph problems.</div>
-              <div class="mg-bubble">Also check this 👇</div>
-              <div class="file-bubble">
-                <span style="font-size:24px">📄</span>
-                <div><div class="fb-name">DSA Advanced 2024.pdf</div><div class="fb-meta">2.4 MB · PDF</div><div class="fb-dl">↓ Download</div></div>
-              </div>
-              <div class="mg-time">2:44 PM</div>
-            </div>
-          </div>
-          <div class="msg-group out">
-            <div class="mg-av" style="background:var(--lilac-mid)">Me</div>
-            <div class="mg-bubbles">
-              <div class="mg-sender">You</div>
-              <div class="mg-bubble">Found it! Downloading now 🎉 Thanks Ravi!</div>
-              <div class="mg-reactions"><span class="reaction">❤️ 1</span></div>
-              <div class="mg-time">2:45 PM</div>
-            </div>
+          <div class="empty-pane" id="dm-empty-state">
+            <div class="empty-icon">💬</div>
+            <h3>Your messages</h3>
+            <p>Select a conversation from the left to read and send real-time messages.</p>
           </div>
         </div>
         <div class="input-bar">
           <button class="ib-btn">😊</button>
-          <button class="ib-btn">📎</button>
-          <input id="dm-input" placeholder="Message Ravi Kumar…" onkeydown="if(event.key==='Enter')sendDM()">
+          <input id="dm-input" placeholder="Select a conversation first…" onkeydown="if(event.key==='Enter')sendDM()" disabled>
           <button class="send-btn" onclick="sendDM()">➤</button>
         </div>
       </div>
@@ -688,70 +613,33 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
       <!-- Study Room view (hidden initially) -->
       <div id="view-room" style="display:none;flex-direction:column;height:100%;overflow:hidden;">
         <div class="chat-header">
-          <div class="ch-icon" id="room-hdr-icon" style="background:var(--rust-light)">🧮</div>
+          <div class="ch-icon" id="room-hdr-icon" style="background:var(--rust-light)">📚</div>
           <div class="ch-info">
-            <div class="ch-name" id="room-hdr-name">Graph Theory Marathon</div>
+            <div class="ch-name" id="room-hdr-name">Select a Study Room</div>
             <div class="ch-sub">
-              <span id="room-hdr-tag" style="font-weight:700;color:var(--rust)">DSA</span>
-              <span>·</span>
-              <span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span>
-              <span id="room-hdr-count">7 members studying</span>
-              <span>· Hosted by Anjali Kumar</span>
+              <span id="room-hdr-tag" style="font-weight:700;color:var(--rust)"></span>
+              <span id="room-hdr-count"></span>
             </div>
           </div>
           <div class="ch-actions">
-            <button class="ch-btn">📌 Pin</button>
-            <button class="ch-btn">📎 File</button>
             <button class="ch-btn danger" onclick="leaveRoom()">✕ Leave</button>
           </div>
         </div>
         <div class="room-body">
           <div class="room-chat-wrap">
             <div class="messages-area" id="room-messages">
-              <div class="pinned">📌 <span><strong>Pinned:</strong> Tonight's agenda — BFS patterns → Dijkstra → practice problems. Bring your IDE!</span></div>
-              <div class="date-sep">Today · 8:00 PM</div>
-              <div class="msg-group">
-                <div class="mg-av" style="background:var(--rust)">A</div>
-                <div class="mg-bubbles">
-                  <div class="mg-sender">Anjali Kumar <span style="background:var(--rust-light);color:var(--rust);font-size:8px;padding:1px 5px;border-radius:100px;font-weight:700;margin-left:4px;">host</span></div>
-                  <div class="mg-bubble">Welcome everyone! Let's start with BFS — does everyone have the problem sheet? 🚀</div>
-                  <div class="mg-time">8:01 PM</div>
-                </div>
-              </div>
-              <div class="msg-group">
-                <div class="mg-av" style="background:var(--mint-mid)">P</div>
-                <div class="mg-bubbles">
-                  <div class="mg-sender">Priya Venkat</div>
-                  <div class="mg-bubble">Yes! Starting with LC 102 — Binary Tree Level Order Traversal</div>
-                  <div class="mg-time">8:02 PM</div>
-                </div>
-              </div>
-              <div class="msg-group">
-                <div class="mg-av" style="background:var(--lilac-mid)">M</div>
-                <div class="mg-bubbles">
-                  <div class="mg-sender">Mohammed Saleem</div>
-                  <div class="mg-bubble">BFS is essentially queue + visited set. Once you see that, every graph problem feels the same 🧠</div>
-                  <div class="mg-reactions"><span class="reaction">🔥 4</span><span class="reaction">✅ 3</span></div>
-                  <div class="mg-time">8:04 PM</div>
-                </div>
-              </div>
-              <div class="msg-group out">
-                <div class="mg-av" style="background:var(--lilac-mid)">Me</div>
-                <div class="mg-bubbles">
-                  <div class="mg-sender">You</div>
-                  <div class="mg-bubble">Trying problem 200 — Number of Islands now 🏝️</div>
-                  <div class="mg-time">8:06 PM</div>
-                </div>
+              <div class="empty-pane" id="room-empty-state">
+                <div class="empty-icon">📚</div>
+                <h3>Study Room</h3>
+                <p>Select a room from the left panel to start the real-time session.</p>
               </div>
             </div>
             <div class="input-bar">
               <button class="ib-btn">😊</button>
-              <button class="ib-btn">📎</button>
-              <input id="room-input" placeholder="Message the study room…" onkeydown="if(event.key==='Enter')sendRoom()">
+              <input id="room-input" placeholder="Message the study room…" onkeydown="if(event.key==='Enter')sendRoom()" disabled>
               <button class="send-btn room" onclick="sendRoom()">➤</button>
             </div>
           </div>
-          <!-- Room Sidebar -->
           <div class="room-sidebar">
             <div class="rs-section">
               <div class="rs-title">Focus Timer</div>
@@ -762,18 +650,9 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
                 <button class="timer-btn" onclick="resetTimer()">↺ Reset</button>
               </div>
             </div>
-            <div class="rs-section">
-              <div class="rs-title">Members · 7</div>
-              <div class="rs-member"><div class="rs-av" style="background:var(--rust)">A<div class="rs-dot"></div></div><div><div class="rs-name">Anjali Kumar</div><div class="rs-role">Google · SWE Intern</div></div><span class="host-tag">host</span></div>
-              <div class="rs-member"><div class="rs-av" style="background:var(--mint-mid)">P<div class="rs-dot"></div></div><div><div class="rs-name">Priya Venkat</div><div class="rs-role">CSE · PSG Tech</div></div></div>
-              <div class="rs-member"><div class="rs-av" style="background:var(--lilac-mid)">M<div class="rs-dot"></div></div><div><div class="rs-name">Mohammed Saleem</div><div class="rs-role">Amazon · SDE I</div></div></div>
-              <div class="rs-member"><div class="rs-av" style="background:var(--yellow-mid)">K<div class="rs-dot"></div></div><div><div class="rs-name">Karthik R</div><div class="rs-role">IT · Anna Univ</div></div></div>
-              <div class="rs-member"><div class="rs-av" style="background:var(--lilac-mid)">Me<div class="rs-dot"></div></div><div><div class="rs-name">You</div><div class="rs-role">CSE · PSG Tech</div></div></div>
-            </div>
-            <div class="rs-section">
-              <div class="rs-title">Shared Files</div>
-              <div class="rs-resource">📄 <div><div style="font-size:11px;font-weight:700;">DSA Advanced 2024.pdf</div><div style="font-size:10px;color:var(--muted);">By Anjali · 2.4 MB</div></div></div>
-              <div class="rs-resource">📊 <div><div style="font-size:11px;font-weight:700;">Graph Problems Sheet.pdf</div><div style="font-size:10px;color:var(--muted);">By Anjali · 1.1 MB</div></div></div>
+            <div class="rs-section" id="room-members-section">
+              <div class="rs-title">Members</div>
+              <div id="room-members-list"><div style="font-size:12px;color:var(--muted);">Join a room to see members.</div></div>
             </div>
           </div>
         </div>
@@ -785,6 +664,13 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
 
 <script src="{% static 'app.js' %}"></script>
 <script>
+/* ─── WebSocket state ─── */
+const CURRENT_USER_ID  = {{ user.id|default:0 }};
+const CURRENT_INITIALS = '{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}';
+let   activeSocket     = null;
+let   activeConvId     = null;
+let   activeRoomId     = null;
+
 /* ── Mode toggle ── */
 function setMode(mode) {
   const isDM = mode === 'dm';
@@ -802,103 +688,137 @@ function setMode(mode) {
 }
 
 /* ── Open DM ── */
-function openDM(el, name, initials, bg) {
+function openDM(el, convId, name, initials) {
   document.querySelectorAll('.dm-item').forEach(i=>i.classList.remove('active'));
   el.classList.add('active');
-  el.querySelector('.dm-badge')?.remove();
-  document.getElementById('dm-hdr-av').textContent = initials;
-  document.getElementById('dm-hdr-av').style.background = bg.replace(/var\(/, '').replace(/\)/, '');
-  document.getElementById('dm-hdr-av').setAttribute('style', `background:${bg}`);
+  document.getElementById('dm-hdr-av').textContent = initials || name.substring(0,2).toUpperCase();
+  document.getElementById('dm-hdr-av').style.background = 'var(--rust)';
   document.getElementById('dm-hdr-name').textContent = name;
-  document.getElementById('dm-input').placeholder = `Message ${name.split(' ')[0]}…`;
+  document.getElementById('dm-hdr-sub').textContent = 'Active now';
+
+  const inp = document.getElementById('dm-input');
+  inp.placeholder = `Message ${name.split(' ')[0]}…`;
+  inp.disabled = false;
+
   document.getElementById('view-dm').style.display = 'flex';
   document.getElementById('view-room').style.display = 'none';
+
+  // Load history via API then open WebSocket
+  document.getElementById('dm-messages').innerHTML = '<div class="date-sep">Today</div>';
+  document.getElementById('dm-empty-state') && document.getElementById('dm-empty-state').remove();
+  activeConvId = convId;
+  activeRoomId = null;
+  connectWebSocket('chat', convId);
+}
+
+/* ── Open Room ── */
+function openRoom(el, roomId, name, subject) {
+  document.querySelectorAll('.room-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('room-hdr-name').textContent = name;
+  document.getElementById('room-hdr-tag').textContent  = subject;
+  document.getElementById('room-hdr-count').textContent = 'Joining…';
+
+  const inp = document.getElementById('room-input');
+  inp.disabled = false;
+  inp.placeholder = `Message ${name}…`;
+
+  document.getElementById('room-messages').innerHTML = '<div class="date-sep">Today</div>';
+  document.getElementById('room-empty-state') && document.getElementById('room-empty-state').remove();
+  setMode('rooms');
+  activeRoomId = roomId;
+  activeConvId = null;
+  connectWebSocket('room', roomId);
+  addRoomSys(`You joined "${name}" 🎓`);
+}
+
+/* ── WebSocket connection ── */
+function connectWebSocket(type, id) {
+  if (activeSocket) { activeSocket.close(); activeSocket = null; }
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const url = `${proto}://${window.location.host}/ws/${type}/${id}/`;
+  const socket = new WebSocket(url);
+  activeSocket = socket;
+
+  socket.onopen = () => { console.log(`WS connected: ${type}/${id}`); };
+
+  socket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    const msgType = data.type || '';
+    if (msgType === 'chat_message' || msgType === 'room_message') {
+      const isOwn = data.sender_id === CURRENT_USER_ID;
+      const targetId = type === 'chat' ? 'dm-messages' : 'room-messages';
+      appendMessage(targetId, data.message, data.initials || data.sender.substring(0,2).toUpperCase(), data.sender, isOwn, data.timestamp);
+    }
+  };
+
+  socket.onclose  = () => { console.warn(`WS closed: ${type}/${id}`); };
+  socket.onerror  = (e) => { console.error('WS error', e); };
 }
 
 /* ── Send DM ── */
 function sendDM() {
   const inp = document.getElementById('dm-input');
-  const txt = inp.value.trim(); if (!txt) return;
-  addMsg('dm-messages', txt, 'var(--lilac-mid)', 'Me'); inp.value='';
+  const txt = inp.value.trim();
+  if (!txt || !activeSocket) return;
+  activeSocket.send(JSON.stringify({ message: txt }));
+  inp.value = '';
 }
 
-/* ── Open Room (no password) ── */
-function openRoom(el, name, tag, icon, iconBg, tagColor, id, count) {
-  document.querySelectorAll('.room-item').forEach(i=>i.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('room-hdr-name').textContent = name;
-  document.getElementById('room-hdr-tag').textContent  = tag;
-  document.getElementById('room-hdr-tag').style.color  = tagColor;
-  document.getElementById('room-hdr-icon').textContent = icon;
-  document.getElementById('room-hdr-icon').style.background = iconBg;
-  document.getElementById('room-hdr-count').textContent = count + ' members studying';
-  setMode('rooms');
+/* ── Send Room message ── */
+function sendRoom() {
+  const inp = document.getElementById('room-input');
+  const txt = inp.value.trim();
+  if (!txt || !activeSocket) return;
+  activeSocket.send(JSON.stringify({ message: txt }));
+  inp.value = '';
 }
 
 /* ── Ask password ── */
-let pendingRoomEl = null, pendingRoomName = '';
-function askJoin(el, name) {
-  pendingRoomEl = el; pendingRoomName = name;
+let pendingRoomEl = null, pendingRoomId = '', pendingRoomName = '';
+function askJoin(el, roomId, name) {
+  pendingRoomEl = el; pendingRoomId = roomId; pendingRoomName = name;
   document.getElementById('pw-desc').innerHTML = `Enter the password to join <strong>${name}</strong>`;
   openModal('pw-modal');
   setTimeout(()=>document.getElementById('pw-input').focus(), 200);
 }
 function confirmJoin() {
-  const pw = document.getElementById('pw-input').value.trim();
-  if (!pw) { document.getElementById('pw-input').focus(); return; }
   closeModal('pw-modal');
-  document.getElementById('pw-input').value = '';
   if (!pendingRoomEl) return;
-  document.querySelectorAll('.room-item').forEach(i=>i.classList.remove('active'));
-  pendingRoomEl.classList.add('active');
-  document.getElementById('room-hdr-name').textContent = pendingRoomName;
-  setMode('rooms');
-  document.getElementById('view-room').style.display = 'flex';
-  document.getElementById('view-dm').style.display = 'none';
-  addRoomSys(`You joined ${pendingRoomName} 🎓`);
-}
-
-/* ── Leave Room ── */
-function leaveRoom() {
-  setMode('dm');
-  document.getElementById('view-dm').style.display = 'flex';
-  document.getElementById('view-room').style.display = 'none';
-}
-
-/* ── Send room msg ── */
-function sendRoom() {
-  const inp = document.getElementById('room-input');
-  const txt = inp.value.trim(); if (!txt) return;
-  addMsg('room-messages', txt, 'var(--lilac-mid)', 'Me'); inp.value='';
+  // Submit join via form post
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = '{% url "rooms" %}';
+  f.innerHTML = `<input name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input name="action" value="join"><input name="room_id" value="${pendingRoomId}"><input name="password" value="${document.getElementById('pw-input').value}">`;
+  document.body.appendChild(f); f.submit();
 }
 
 /* ── Create Room ── */
 function createRoom() {
   const name = document.getElementById('cr-name').value.trim();
   if (!name) { document.getElementById('cr-name').focus(); return; }
-  const sub  = document.getElementById('cr-subject').value;
+  const sub = document.getElementById('cr-subject').value;
+  const pw  = document.getElementById('cr-pw').value;
   closeModal('cr-modal');
-  const list = document.getElementById('rooms-list');
-  const el   = document.createElement('div');
-  el.className = 'room-item';
-  el.innerHTML = `<div class="ri-top"><div class="ri-name">${esc(name)}</div><div class="ri-live"><span class="blink-dot" style="width:6px;height:6px;display:inline-block;"></span> Live</div></div>
-    <span class="ri-tag" style="background:var(--mint-light);color:var(--sage)">${sub}</span>
-    <div class="ri-last">You created this room</div>
-    <div class="ri-members"><div class="ri-av" style="background:var(--lilac-mid)">Me</div><span class="ri-count">1 studying</span></div>`;
-  el.onclick = () => openRoom(el, name, sub, '📝', 'var(--mint-light)', 'var(--sage)', 'new', '1');
-  list.insertBefore(el, list.firstChild);
-  openRoom(el, name, sub, '📝', 'var(--mint-light)', 'var(--sage)', 'new', '1');
-  addRoomSys(`Room "${name}" created! 🔐`);
-  document.getElementById('cr-name').value=''; document.getElementById('cr-pw').value='';
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = '{% url "rooms" %}';
+  f.innerHTML = `<input name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input name="action" value="create"><input name="name" value="${esc(name)}"><input name="subject" value="${esc(sub)}"><input name="password" value="${esc(pw)}">`;
+  document.body.appendChild(f); f.submit();
+}
+
+/* ── Leave Room ── */
+function leaveRoom() {
+  if (activeSocket) { activeSocket.close(); activeSocket = null; }
+  setMode('dm');
 }
 
 /* ── Helpers ── */
-function addMsg(cid, text, color, name) {
-  const c = document.getElementById(cid);
+function appendMessage(containerId, text, initials, sender, isOwn, time) {
+  const c = document.getElementById(containerId);
   const d = document.createElement('div');
-  d.className = 'msg-group out';
-  d.innerHTML = `<div class="mg-av" style="background:${color}">${name.substring(0,2)}</div>
-    <div class="mg-bubbles"><div class="mg-sender">${name}</div><div class="mg-bubble">${esc(text)}</div><div class="mg-time">Just now</div></div>`;
+  d.className = isOwn ? 'msg-group out' : 'msg-group';
+  const color = isOwn ? 'var(--lilac-mid)' : 'var(--rust)';
+  d.innerHTML = `<div class="mg-av" style="background:${color}">${esc(initials)}</div>
+    <div class="mg-bubbles"><div class="mg-sender">${esc(sender)}</div><div class="mg-bubble">${esc(text)}</div><div class="mg-time">${time || 'Just now'}</div></div>`;
   c.appendChild(d); c.scrollTop = c.scrollHeight;
 }
 function addRoomSys(txt) {
@@ -907,7 +827,7 @@ function addRoomSys(txt) {
   d.className='date-sep'; d.textContent=txt;
   c.appendChild(d); c.scrollTop=c.scrollHeight;
 }
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function tabActive(el){
@@ -921,7 +841,6 @@ function filterList(inp, listId){
   });
 }
 
-/* ── Close modal on backdrop ── */
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 document.getElementById('pw-input').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmJoin(); });
 
