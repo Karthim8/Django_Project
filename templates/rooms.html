@@ -45,6 +45,7 @@
     <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
     <ul class="nav-links">
       <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'announcements' %}">Announcements</a></li>
       <li><a href="{% url 'resources' %}">Resources</a></li>
       <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
       <li><a href="{% url 'rooms' %}" class="active">Study Rooms</a></li>
@@ -52,21 +53,26 @@
       <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
       <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
       <li><a href="{% url 'profile' %}">Profile</a></li>
+      {% if is_super_admin %}<li><a href="{% url 'manage_roles' %}" style="color:var(--rust); font-weight:800;">Admin</a></li>{% endif %}
     </ul>
     <div class="nav-actions">
       {% if user.is_authenticated %}
-        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
-          {% if user.socialaccount_set.all %}
-            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
-          {% else %}
-            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
-          {% endif %}
-        </a>
-        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
-        </form>
+        <div class="avatar-dropdown-container">
+          <a href="#" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+            {% if user.socialaccount_set.all %}
+              <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% else %}
+              <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% endif %}
+          </a>
+          <div class="avatar-dropdown">
+            <form method="post" action="{% url 'account_logout' %}" style="width:100%; margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item" style="color:var(--rust); border:none; background:none; width:100%; text-align:left; font-weight:700;">Log out</button>
+            </form>
+          </div>
+        </div>
       {% else %}
         <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
         <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>

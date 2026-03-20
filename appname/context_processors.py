@@ -21,5 +21,6 @@ def notifications_count(request):
     return {
         'unread_messages_count': unread_messages,
         'pending_follow_count': pending_follows,
-        'total_notifications': unread_messages + pending_follows
+        'total_notifications': unread_messages + pending_follows,
+        'is_super_admin': request.user.email == 'karthikeyanspro@gmail.com'
     }

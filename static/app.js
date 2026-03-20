@@ -22,7 +22,7 @@
     requestAnimationFrame(anim);
   })();
 
-  document.querySelectorAll('button, a, .feat-card, .profile-card, .room-card, .peer-card, .res-item, .res-card-full, .room-page-card, .chat-item, .step, .how-step').forEach(el => {
+  document.querySelectorAll('button, a, .feat-card, .profile-card, .room-card, .peer-card, .res-item, .res-card-full, .room-page-card, .chat-item, .step, .how-step, .dropdown-item, .user-avatar-nav').forEach(el => {
     el.addEventListener('mouseenter', () => {
       cur.style.transform   = 'translate(-50%,-50%) scale(2)';
       trail.style.width     = '56px';
@@ -37,6 +37,32 @@
     });
   });
 })();
+
+// ── Avatar Dropdown Toggle ───────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  var containers = document.querySelectorAll('.avatar-dropdown-container');
+  
+  containers.forEach(function(container) {
+    var avatar = container.querySelector('.user-avatar-nav');
+    var dropdown = container.querySelector('.avatar-dropdown');
+    
+    if (!avatar || !dropdown) return;
+    
+    avatar.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropdown.classList.toggle('active');
+    });
+  });
+  
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.avatar-dropdown').forEach(function(dropdown) {
+      if (!dropdown.closest('.avatar-dropdown-container').contains(e.target)) {
+        dropdown.classList.remove('active');
+      }
+    });
+  });
+});
 
 // ── Scroll reveal ─────────────────────────────
 (function(){

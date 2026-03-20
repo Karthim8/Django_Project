@@ -136,3 +136,23 @@ class Resource(models.Model):
 
     def __str__(self):
         return f"{self.title} — {self.subject}"
+
+
+# ──────────────────────────────────────────────
+#  Announcements
+# ──────────────────────────────────────────────
+class Announcement(models.Model):
+    title       = models.CharField(max_length=200)
+    description = models.TextField()
+    image_url   = models.URLField(blank=True)
+    event_date  = models.DateTimeField(null=True, blank=True)
+    author      = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcements')
+    is_pinned   = models.BooleanField(default=False)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+
+    def __str__(self):
+        return self.title

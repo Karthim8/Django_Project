@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import Resource, Tag, Conversation, Message, StudyRoom, RoomMembership, Follow
+from .models import Resource, Tag, Conversation, Message, StudyRoom, RoomMembership, Follow, Announcement
 
 
 def index(request):
@@ -376,3 +376,103 @@ def dashboard_view(request):
         profile = None
 
     return render(request, "ranking_dashboard.html", {"profile": profile})
+
+# ──────────────────────────────────────────────
+#  Announcements & Roles
+# ──────────────────────────────────────────────
+from accounts.models import UserProfile, DeveloperProfile
+
+def announcements_view(request):
+    is_authorized = False
+    if request.user.is_authenticated:
+        if request.user.email == 'karthikeyanspro@gmail.com' or (hasattr(request.user, 'profile') and request.user.profile.is_club_secretary):
+            is_authorized = True
+    
+    announcements = Announcement.objects.all().order_by('-is_pinned', '-created_at')
+    return render(request, "announcements.html", {
+        "announcements": announcements,
+        "is_authorized": is_authorized,
+        "is_super_admin": request.user.is_authenticated and request.user.email == 'karthikeyanspro@gmail.com'
+    })
+
+@login_required
+def create_announcement(request):
+    is_super_admin = request.user.email == 'karthikeyanspro@gmail.com'
+    is_secretary = hasattr(request.user, 'profile') and request.user.profile.is_club_secretary
+    
+    if not (is_super_admin or is_secretary):
+        messages.error(request, "You are not authorized to post announcements.")
+        return redirect('announcements')
+
+    if request.method == "POST":
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        event_date = request.POST.get('event_date')
+        image_file = request.FILES.get('image')
+        is_pinned = request.POST.get('is_pinned') == 'on'
+        
+        image_url = ""
+        if image_file:
+            from botocore.client import Config
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME,
+                config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'})
+            )
+            ext = image_file.name.split('.')[-1]
+            s3_key = f"announcements/{uuid.uuid4().hex}.{ext}"
+            try:
+                s3_client.upload_fileobj(image_file, settings.AWS_STORAGE_BUCKET_NAME, s3_key, ExtraArgs={'ContentType': image_file.content_type})
+                image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_key}"
+            except Exception as e:
+                messages.error(request, f"Image upload failed: {e}")
+
+        Announcement.objects.create(
+            title=title,
+            description=description,
+            image_url=image_url,
+            event_date=event_date if event_date else None,
+            author=request.user,
+            is_pinned=is_pinned
+        )
+        messages.success(request, "Announcement posted successfully!")
+    return redirect('announcements')
+
+@login_required
+def delete_announcement(request, pk):
+    from django.shortcuts import get_object_or_404
+    announcement = get_object_or_404(Announcement, pk=pk)
+    is_super_admin = request.user.email == 'karthikeyanspro@gmail.com'
+    
+    if announcement.author == request.user or is_super_admin:
+        announcement.delete()
+        messages.success(request, "Announcement deleted.")
+    else:
+        messages.error(request, "Not authorized.")
+    return redirect('announcements')
+
+@login_required
+def manage_roles_view(request):
+    if request.user.email != 'karthikeyanspro@gmail.com':
+        messages.error(request, "Access denied.")
+        return redirect('index')
+    
+    if request.method == "POST":
+        user_id = request.POST.get('user_id')
+        action = request.POST.get('action') 
+        target_user = User.objects.get(id=user_id)
+        profile, _ = UserProfile.objects.get_or_create(user=target_user)
+        
+        if action == 'promote':
+            profile.is_club_secretary = True
+            messages.success(request, f"{target_user.username} promoted to Club Secretary.")
+        else:
+            profile.is_club_secretary = False
+            messages.info(request, f"{target_user.username} demoted.")
+        profile.save()
+        return redirect('manage_roles')
+
+    users = User.objects.all().select_related('profile').exclude(email='karthikeyanspro@gmail.com').order_by('username')
+    return render(request, "manage_roles.html", {"users": users})

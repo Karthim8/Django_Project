@@ -1,0 +1,176 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements — NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+<style>
+.announcement-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-top: 40px; }
+.announcement-card { position: relative; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.3s; }
+.announcement-card:hover { transform: translateY(-5px); }
+.ann-pinned { position: absolute; top: 12px; right: 12px; background: var(--rust); color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; z-index: 2; box-shadow: 0 4px 10px rgba(186, 95, 75, 0.3); }
+.ann-image { width: 100%; height: 200px; object-fit: cover; border-bottom: 3px solid var(--rust-light); background: #eee; }
+.ann-content { padding: 24px; flex-grow: 1; display: flex; flex-direction: column; }
+.ann-title { font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: var(--rust); margin-bottom: 12px; line-height: 1.3; }
+.ann-desc { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }
+.ann-footer { display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px dashed var(--rust-light); font-size: 12px; color: var(--muted); }
+.ann-author { font-weight: 700; color: var(--rust); }
+.ann-date { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 12px; font-weight: 700; color: #a84e00; background: var(--peach-light); padding: 4px 10px; border-radius: 6px; width: fit-content; }
+
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-content { background: var(--chalk); width: 90%; max-width: 500px; padding: 40px; border-radius: 24px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 4px solid white; }
+.close-modal { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 24px; color: var(--muted); transition: color 0.2s; }
+.close-modal:hover { color: var(--rust); }
+
+.user-avatar-nav { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; text-decoration: none; position: relative; box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust); transition: box-shadow 0.2s; }
+.user-avatar-nav:hover { box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust); }
+.user-avatar-nav img { width: 100%; height: 100%; object-fit: cover; }
+.user-avatar-fallback { display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--rust); color: white; font-size: 13px; font-weight: 800; font-family: var(--font-body); }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'announcements' %}" class="active">Announcements</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}" class="nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a></li>
+      <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
+      <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+      {% if is_super_admin %}<li><a href="{% url 'manage_roles' %}" style="color:var(--rust); font-weight:800;">Admin</a></li>{% endif %}
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <div class="avatar-dropdown-container">
+          <a href="#" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+            {% if user.socialaccount_set.all %}
+              <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% else %}
+              <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% endif %}
+          </a>
+          <div class="avatar-dropdown">
+            <form method="post" action="{% url 'account_logout' %}" style="width:100%; margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item" style="color:var(--rust); border:none; background:none; width:100%; text-align:left; font-weight:700;">Log out</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-inner reveal">
+    <p class="eyebrow">Announcements</p>
+    <h1>Campus.<br><em>Connected.</em></h1>
+    <p>Stay updated with the latest hackathons, events, and workshops. Centralized communication for every club and student.</p>
+    {% if is_authorized %}
+    <div class="page-hero-actions">
+      <button class="btn-clay btn-clay--rust btn-clay--lg" onclick="document.getElementById('createModal').style.display='flex'">Post Announcement</button>
+    </div>
+    {% endif %}
+  </div>
+  <div class="page-hero-num">📢</div>
+</div>
+
+<div class="page-body">
+  {% if messages %}
+    {% for msg in messages %}
+      <div style="padding:15px; border-radius:12px; margin-bottom:24px; background:{% if msg.tags == 'error' %}var(--sunset-light){% else %}var(--mint-light){% endif %}; font-weight:600; text-align:center;">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="announcement-grid reveal">
+    {% for ann in announcements %}
+    <div class="clay-card announcement-card">
+      {% if ann.is_pinned %}<div class="ann-pinned">pinned</div>{% endif %}
+      {% if ann.image_url %}<img src="{{ ann.image_url }}" class="ann-image" alt="">{% endif %}
+      <div class="ann-content">
+        {% if ann.event_date %}
+        <div class="ann-date">📅 {{ ann.event_date|date:"F j, Y — g:i A" }}</div>
+        {% endif %}
+        <h3 class="ann-title">{{ ann.title }}</h3>
+        <p class="ann-desc">{{ ann.description|linebreaksbr }}</p>
+        <div class="ann-footer">
+          <div class="ann-footer-left">
+            Posted by <span class="ann-author">{{ ann.author.get_full_name|default:ann.author.username }}</span>
+            · {{ ann.created_at|timesince }} ago
+          </div>
+          {% if is_super_admin or ann.author == request.user %}
+          <div style="margin-left:auto;">
+             <form action="{% url 'delete_announcement' ann.pk %}" method="POST" onsubmit="return confirm('Delete this announcement?')">
+               {% csrf_token %}
+               <button type="submit" style="background:none; border:none; color:var(--sunset); cursor:pointer; font-size:16px;" title="Delete">🗑️</button>
+             </form>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="clay-card" style="grid-column: 1/-1; text-align:center; padding:60px;">
+      <h3>No announcements yet.</h3>
+      <p style="color:var(--muted)">Check back later for exciting campus updates!</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal" id="createModal">
+  <div class="modal-content clay-card">
+    <span class="close-modal" onclick="document.getElementById('createModal').style.display='none'">&times;</span>
+    <h2 style="margin-bottom:24px; font-family:var(--font-heading);">New Announcement</h2>
+    <form action="{% url 'create_announcement' %}" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-field" style="margin-bottom:16px;">
+        <label>Title</label>
+        <input type="text" name="title" placeholder="Event Name" required style="width:100%; padding:12px; border-radius:8px; border:2px solid var(--rust-light);">
+      </div>
+      <div class="form-field" style="margin-bottom:16px;">
+        <label>Description</label>
+        <textarea name="description" placeholder="Details about the event..." required style="width:100%; min-height:100px; padding:12px; border-radius:8px; border:2px solid var(--rust-light); font-family:inherit;"></textarea>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div class="form-field">
+          <label>Event Date (Optional)</label>
+          <input type="datetime-local" name="event_date" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--rust-light);">
+        </div>
+        <div class="form-field">
+          <label>Poster Image (Optional)</label>
+          <input type="file" name="image" accept="image/*" style="width:100%; padding:8px;">
+        </div>
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" name="is_pinned"> Pin to top
+        </label>
+      </div>
+      <button type="submit" class="btn-clay btn-clay--rust" style="width:100%;">Publish Announcement</button>
+    </form>
+  </div>
+</div>
+
+<script src="{% static 'app.js' %}"></script>
+<script src="{% static 'notifications.js' %}"></script>
+<script>
+window.onclick = function(event) { if (event.target == document.getElementById('createModal')) { document.getElementById('createModal').style.display = 'none'; } }
+</script>
+</body>
+</html>

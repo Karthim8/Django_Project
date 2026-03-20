@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Roles — NexusLink Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+<style>
+.admin-table-card { padding: 0; overflow: hidden; }
+.admin-table { width: 100%; border-collapse: collapse; text-align: left; }
+.admin-table th { padding: 16px 24px; background: var(--rust-light); color: var(--rust); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+.admin-table td { padding: 16px 24px; border-bottom: 1px solid #f0e6e4; vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: none; }
+.role-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.role-badge--secretary { background: var(--mint-light); color: var(--sage); }
+.role-badge--student { background: #eee; color: #777; }
+.user-avatar-nav { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; text-decoration: none; position: relative; box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust); transition: box-shadow 0.2s; }
+.user-avatar-nav:hover { box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust); }
+.user-avatar-nav img { width: 100%; height: 100%; object-fit: cover; }
+.user-avatar-fallback { display: none; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.5px; }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'announcements' %}">Announcements</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}" class="nav-link-wrap">Chat{% if unread_messages_count > 0 %}<span class="nav-badge" id="unread-msg-badge">{{ unread_messages_count }}</span>{% else %}<span class="nav-badge hidden" id="unread-msg-badge">0</span>{% endif %}</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}" class="nav-link-wrap">Connect{% if pending_follow_count > 0 %}<span class="nav-badge" id="pending-follow-badge">{{ pending_follow_count }}</span>{% else %}<span class="nav-badge hidden" id="pending-follow-badge">0</span>{% endif %}</a></li>
+      <li><a href="{% url 'coding_challenge:problem_list' %}">Problem Solver</a></li>
+      <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+      {% if is_super_admin %}<li><a href="{% url 'manage_roles' %}" class="active" style="color:var(--rust); font-weight:800;">Admin</a></li>{% endif %}
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <div class="avatar-dropdown-container">
+          <a href="#" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+            {% if user.socialaccount_set.all %}
+              <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% else %}
+              <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+            {% endif %}
+          </a>
+          <div class="avatar-dropdown">
+            <form method="post" action="{% url 'account_logout' %}" style="width:100%; margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item" style="color:var(--rust); border:none; background:none; width:100%; text-align:left; font-weight:700;">Log out</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-inner reveal">
+    <p class="eyebrow">Administration</p>
+    <h1>Authority.<br><em>Management.</em></h1>
+    <p>Manage the publishing authority of NexusLink. Grant or revoke "Club Secretary" permissions to authorized students.</p>
+  </div>
+  <div class="page-hero-num">⚖️</div>
+</div>
+
+<div class="page-body">
+  {% if messages %}
+    {% for msg in messages %}
+      <div style="padding:15px; border-radius:12px; margin-bottom:24px; background:var(--mint-light); font-weight:600; text-align:center;">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="clay-card admin-table-card reveal">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Email</th>
+          <th>Current Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.get_full_name|default:u.username }}</strong></td>
+          <td><code style="background:#f5f5f5; padding:2px 6px; border-radius:4px;">{{ u.email }}</code></td>
+          <td>
+            {% if u.profile.is_club_secretary %}
+              <span class="role-badge role-badge--secretary">Club Secretary</span>
+            {% else %}
+              <span class="role-badge role-badge--student">Regular User</span>
+            {% endif %}
+          </td>
+          <td>
+            <form action="{% url 'manage_roles' %}" method="POST" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ u.id }}">
+              {% if u.profile.is_club_secretary %}
+                <input type="hidden" name="action" value="demote">
+                <button type="submit" class="btn-clay btn-clay--outline btn-sm" style="background:#fff0f0; border-color:#ffcccc; color:#ff5555;">Revoke Authority</button>
+              {% else %}
+                <input type="hidden" name="action" value="promote">
+                <button type="submit" class="btn-clay btn-clay--rust btn-sm">Make Secretary</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="text-align:center; padding:40px; color:var(--muted);">No other users found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="{% static 'app.js' %}"></script>
+<script src="{% static 'notifications.js' %}"></script>
+</body>
+</html>

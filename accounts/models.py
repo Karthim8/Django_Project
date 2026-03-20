@@ -19,6 +19,11 @@ class UserProfile(models.Model):
     skills       = models.JSONField(default=list, blank=True)   # ["Python","Django",...]
     created_at   = models.DateTimeField(auto_now_add=True)
     updated_at   = models.DateTimeField(auto_now=True)
+    is_club_secretary = models.BooleanField(default=False)
+
+    @property
+    def is_super_admin(self):
+        return self.user.email == 'karthikeyanspro@gmail.com'
 
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.role})"
