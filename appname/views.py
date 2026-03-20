@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import Resource, Tag, Conversation, Message, StudyRoom, RoomMembership
+from .models import Resource, Tag, Conversation, Message, StudyRoom, RoomMembership, Follow
 
 
 def index(request):
@@ -16,9 +16,15 @@ def index(request):
 
 @login_required
 def chat_view(request):
+    # Get IDs of users who have an accepted follow relationship with current user
+    following_ids = Follow.objects.filter(follower=request.user, status='accepted').values_list('following_id', flat=True)
+    follower_ids = Follow.objects.filter(following=request.user, status='accepted').values_list('follower_id', flat=True)
+    connected_user_ids = set(list(following_ids) + list(follower_ids))
+
     # Fetch user's conversations and pre-compute other_user for each
     convs_qs = Conversation.objects.filter(
-        Q(user_a=request.user) | Q(user_b=request.user)
+        (Q(user_a=request.user) & Q(user_b_id__in=connected_user_ids)) | 
+        (Q(user_b=request.user) & Q(user_a_id__in=connected_user_ids))
     ).order_by('-updated_at').select_related('user_a', 'user_b').prefetch_related('messages')
 
     # Attach other_user attribute so the template can use {{ conv.other }}
@@ -79,10 +85,116 @@ def rooms_view(request):
         "my_room_ids": my_room_ids
     })
 
+@login_required
 def connect_view(request):
-    return render(request, "connect.html")
+    # Fetch all users except self
+    users_qs = User.objects.exclude(id=request.user.id).select_related('profile').prefetch_related('placements')
+    
+    # Get current user's following list to show "Requested" or "Followed"
+    following_status = {f.following_id: f.status for f in Follow.objects.filter(follower=request.user)}
+    
+    # Attach status to each user object for easy template access
+    users = []
+    for u in users_qs:
+        u.f_status = following_status.get(u.id) # None, 'pending', or 'accepted'
+        users.append(u)
+    
+    # Get pending requests for the current user (notification sidebar)
+    pending_requests = Follow.objects.filter(following=request.user, status='pending').select_related('follower__profile')
+
+    # Get network stats
+    following_count = Follow.objects.filter(follower=request.user, status='accepted').count()
+    followers_count = Follow.objects.filter(following=request.user, status='accepted').count()
+
+    return render(request, "connect.html", {
+        "users": users,
+        "pending_requests": pending_requests,
+        "following_count": following_count,
+        "followers_count": followers_count,
+    })
+
+@login_required
+def follow_action(request):
+    if request.method == "POST":
+        action = request.POST.get('action') # 'request', 'accept', 'decline'
+        user_id = request.POST.get('user_id')
+        
+        if action == 'request':
+            target_user = User.objects.get(id=user_id)
+            Follow.objects.get_or_create(follower=request.user, following=target_user, status='pending')
+            messages.success(request, f"Follow request sent to {target_user.username}!")
+            
+        elif action == 'accept':
+            follow_req = Follow.objects.get(follower_id=user_id, following=request.user, status='pending')
+            follow_req.status = 'accepted'
+            follow_req.save()
+            
+            # Autocreate conversation if it doesn't exist
+            # We ensure user_a has smaller ID for consistency
+            u1_id, u2_id = (min(request.user.id, int(user_id)), max(request.user.id, int(user_id)))
+            u1, u2 = User.objects.get(id=u1_id), User.objects.get(id=u2_id)
+            Conversation.objects.get_or_create(user_a=u1, user_b=u2)
+            
+            messages.success(request, f"You are now connected with {follow_req.follower.username}!")
+            
+        elif action == 'decline':
+            Follow.objects.filter(follower_id=user_id, following=request.user, status='pending').delete()
+            messages.info(request, "Follow request declined.")
+            
+    return redirect('connect')
+def get_github_stats(user):
+    github_repos = []
+    github_repo_count = 0
+    github_error = None
+    profile = getattr(user, 'profile', None)
+    if profile and profile.github:
+        username = profile.github.strip()
+        if 'github.com/' in username:
+            username = username.split('github.com/')[-1].strip('/')
+        if username:
+            try:
+                import ssl
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                url = f"https://api.github.com/users/{username}/repos?per_page=100"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+                    data = json.loads(response.read().decode())
+                    if isinstance(data, list):
+                        github_repo_count = len(data)
+                        sorted_repos = sorted(data, key=lambda r: r.get('stargazers_count', 0), reverse=True)
+                        github_repos = sorted_repos[:4]
+                    else:
+                        github_error = data.get('message', 'Unknown API Response')
+            except Exception as e:
+                github_error = str(e)
+    return github_repos, github_repo_count, github_error
+
+@login_required
+def user_profile_view(request, user_id):
+    target_user = User.objects.get(id=user_id)
+    if target_user == request.user:
+        return redirect('profile')
+
+    is_connected = Follow.objects.filter(
+        (Q(follower=request.user, following=target_user) | Q(follower=target_user, following=request.user)),
+        status='accepted'
+    ).exists()
+    
+    github_repos, github_repo_count, github_error = get_github_stats(target_user)
+
+    return render(request, "profile.html", {
+        "profile_user": target_user,
+        "is_connected": is_connected,
+        "is_own_profile": False,
+        "github_repos": github_repos,
+        "github_repo_count": github_repo_count,
+        "github_error": github_error
+    })
 
 def profile_view(request):
+    # This might be for the current user's profile
     if request.method == "POST" and request.user.is_authenticated:
         full_name = request.POST.get("full_name")
         if full_name:
@@ -120,37 +232,11 @@ def profile_view(request):
             badge.role = role or badge.role
             badge.save()
 
-    github_repos = []
-    github_repo_count = 0
-    github_error = None
-    if request.user.is_authenticated:
-        profile = getattr(request.user, 'profile', None)
-        if profile and profile.github:
-            username = profile.github.strip()
-            # Clean up url if pasted directly
-            if 'github.com/' in username:
-                username = username.split('github.com/')[-1].strip('/')
-            if username:
-                try:
-                    import ssl
-                    ctx = ssl.create_default_context()
-                    ctx.check_hostname = False
-                    ctx.verify_mode = ssl.CERT_NONE
-                    url = f"https://api.github.com/users/{username}/repos?per_page=100"
-                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-                    with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
-                        data = json.loads(response.read().decode())
-                        if isinstance(data, list):
-                            github_repo_count = len(data)
-                            sorted_repos = sorted(data, key=lambda r: r.get('stargazers_count', 0), reverse=True)
-                            github_repos = sorted_repos[:4]
-                        else:
-                            github_error = data.get('message', 'Unknown API Response')
-                except Exception as e:
-                    print(f"GitHub API Error for {username}: {e}")
-                    github_error = str(e)
+    github_repos, github_repo_count, github_error = get_github_stats(request.user)
 
     return render(request, "profile.html", {
+        "profile_user": request.user,
+        "is_own_profile": True,
         "github_repos": github_repos,
         "github_repo_count": github_repo_count,
         "github_error": github_error

@@ -551,7 +551,7 @@ html, body { height: 100%; overflow: hidden; margin: 0; }
             <div class="dm-meta"><div class="dm-time">{{ conv.updated_at|timesince|truncatewords:1 }} ago</div></div>
           </div>
           {% empty %}
-          <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">No conversations yet.<br>Connect with peers to start chatting!</div>
+          <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">No conversations yet.<br><a href="{% url 'connect' %}" style="color:var(--rust);text-decoration:none;font-weight:700">Connect with peers</a> to start chatting!</div>
           {% endfor %}
         </div>
       </div>

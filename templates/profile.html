@@ -118,41 +118,52 @@
     <aside class="profile-sidebar">
       <!-- ID Card -->
       <div class="clay-card profile-id-card reveal">
-        <div class="pid-avatar" style="background:var(--rust-light);color:var(--rust)">{% if user.is_authenticated and user.first_name %}{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}{% else %}PV{% endif %}</div>
-        <div class="pid-name">{% if user.is_authenticated and user.first_name %}{{ user.get_full_name|title }}{% elif user.is_authenticated %}{{ user.username }}{% else %}Priya Venkat{% endif %}</div>
-        <div class="pid-role">{{ user.profile.branch|default:'CSE' }} · {{ user.profile.college|default:'PSG Tech' }} · {{ user.profile.batch_year|default:'3rd' }} Year</div>
+        <div class="pid-avatar" style="background:var(--rust-light);color:var(--rust)">{{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}</div>
+        <div class="pid-name">{{ profile_user.get_full_name|default:profile_user.username }}</div>
+        <div class="pid-role">{{ profile_user.profile.branch|default:'Student' }} · {{ profile_user.profile.college|default:'University' }} · {{ profile_user.profile.batch_year|default:'' }}</div>
         <div class="pid-tags">
-          <span class="pill pill--lilac">Class of {{ user.profile.batch_year|default:'2026' }}</span>
+          <span class="pill pill--lilac">Class of {{ profile_user.profile.batch_year|default:'202x' }}</span>
           <span class="pill pill--green"><span class="blink-dot"></span> Online</span>
         </div>
         <div class="pid-placement">
           <span style="font-size:22px">🎯</span>
           <div class="pid-placement-info">
-            <div class="pid-company">{% if user.placements.first %}{{ user.placements.first.company }}{% else %}Seeking SWE Roles{% endif %}</div>
-            <div class="pid-position">{% if user.placements.first %}{{ user.placements.first.role }}{% else %}Full Stack · Backend · DSA{% endif %}</div>
+            <div class="pid-company">{% if profile_user.placements.first %}{{ profile_user.placements.first.company }}{% else %}Seeking Opportunities{% endif %}</div>
+            <div class="pid-position">{% if profile_user.placements.first %}{{ profile_user.placements.first.role }}{% else %}Developer{% endif %}</div>
           </div>
         </div>
+        {% if is_own_profile %}
         <button class="btn-clay btn-clay--rust pid-edit" style="width:100%" onclick="toggleEdit()">Edit profile</button>
+        {% elif is_connected %}
+        <a href="{% url 'chat' %}" class="btn-clay btn-clay--rust" style="width:100%; text-decoration:none; display:inline-block; text-align:center;">Message</a>
+        {% else %}
+        <form method="POST" action="{% url 'follow_action' %}" style="width:100%">
+          {% csrf_token %}
+          <input type="hidden" name="user_id" value="{{ profile_user.id }}">
+          <input type="hidden" name="action" value="request">
+          <button type="submit" class="btn-clay btn-clay--rust" style="width:100%">Follow to Chat</button>
+        </form>
+        {% endif %}
       </div>
 
       <!-- External links -->
       <div class="clay-card profile-links-card reveal">
         <h4>Linked accounts</h4>
-        <div class="pl-item"><span class="pl-icon">🐙</span><span>{% if user.profile.github %}github.com/{{ user.profile.github }}{% else %}Not Connected{% endif %}</span></div>
-        <div class="pl-item"><span class="pl-icon">⚡</span><span>{% if user.profile.codeforces %}codeforces.com/{{ user.profile.codeforces }}{% else %}Not Connected{% endif %}</span></div>
-        <div class="pl-item"><span class="pl-icon">✉️</span><span>{{ user.email }}</span></div>
+        <div class="pl-item"><span class="pl-icon">🐙</span><span>{% if profile_user.profile.github %}github.com/{{ profile_user.profile.github }}{% else %}Not Connected{% endif %}</span></div>
+        <div class="pl-item"><span class="pl-icon">⚡</span><span>{% if profile_user.profile.codeforces %}codeforces.com/{{ profile_user.profile.codeforces }}{% else %}Not Connected{% endif %}</span></div>
+        <div class="pl-item"><span class="pl-icon">✉️</span><span>{{ profile_user.email }}</span></div>
       </div>
 
       <!-- Skills -->
       <div class="clay-card profile-skills-card reveal">
         <h4>Skills</h4>
         <div class="skill-grid">
-          {% if user.profile.skills %}
-            {% for skill in user.profile.skills %}
+          {% if profile_user.profile.skills %}
+            {% for skill in profile_user.profile.skills %}
             <span class="skill-level-tag"><span class="sl-dot" style="background:var(--mint-mid)"></span>{{ skill }}</span>
             {% endfor %}
           {% else %}
-            <span class="skill-level-tag"><span class="sl-dot" style="background:var(--muted)"></span>Add skills below</span>
+            <span class="skill-level-tag">No skills listed</span>
           {% endif %}
         </div>
         <div style="margin-top:14px;font-size:11px;color:var(--muted)">
@@ -192,7 +203,7 @@
 
       <!-- GitHub repos -->
       <div class="clay-card github-card reveal">
-        <h3>🐙 GitHub Projects <span style="font-size:13px;font-weight:400;color:var(--muted)">synced from github.com/{{ user.profile.github|default:'...' }}</span></h3>
+        <h3>🐙 GitHub Projects <span style="font-size:13px;font-weight:400;color:var(--muted)">synced from github.com/{{ profile_user.profile.github|default:'...' }}</span></h3>
         {% if github_error %}
         <div style="padding:12px; margin-bottom:16px; background:var(--rust-light); color:var(--rust); border-radius:10px; font-size:13px; border:1px solid rgba(193,68,14,0.2);">
           <strong>Unable to sync GitHub:</strong> {{ github_error }}
@@ -256,7 +267,7 @@
 
       <!-- Codeforces stats -->
       <div class="clay-card cf-stats-card reveal">
-        <h3>⚡ Codeforces Stats <span style="font-size:13px;font-weight:400;color:var(--muted)">codeforces.com/priyav</span></h3>
+        <h3>⚡ Codeforces Stats <span style="font-size:13px;font-weight:400;color:var(--muted)">codeforces.com/{{ profile_user.profile.codeforces|default:'...' }}</span></h3>
         <div class="cf-grid">
           <div class="cf-item">
             <div class="cf-item-num" style="color:var(--rust)">1420</div>

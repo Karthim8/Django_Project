@@ -105,93 +105,57 @@
       </div>
 
       <div class="peers-grid">
-        <div class="clay-card peer-card reveal">
+        {% for peer in users %}
+        <div class="clay-card peer-card reveal" data-subject="{{ peer.profile.branch|lower }}">
           <div class="peer-top">
-            <div class="peer-av" style="background:var(--rust-light);color:var(--rust)">AK</div>
+            <div class="peer-av" style="background:var(--rust-light);color:var(--rust)">{{ peer.first_name|first|upper }}{{ peer.last_name|first|upper }}</div>
             <div style="flex:1">
-              <div class="peer-name">Anjali Kumar</div>
-              <div class="peer-meta">CSE · Anna University · Senior 2024</div>
-              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--rust" style="font-size:9px">Senior</span><span class="pill pill--green" style="font-size:9px">● Online</span></div>
+              <div class="peer-name">{{ peer.get_full_name|default:peer.username }}</div>
+              <div class="peer-meta">{{ peer.profile.branch|default:"Student" }} · {{ peer.profile.college|default:"Anna University" }} · {{ peer.profile.role|title }} {{ peer.profile.batch_year|default:"" }}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <span class="pill pill--rust" style="font-size:9px">{{ peer.profile.role|title }}</span>
+                <span class="pill pill--green" style="font-size:9px">● Online</span>
+              </div>
             </div>
           </div>
-          <div class="peer-company"><span>🌿</span><div class="peer-company-name">Google</div><div class="peer-company-role">SWE Intern</div></div>
+          {% with badge=peer.placements.first %}
+          {% if badge %}
+          <div class="peer-company"><span>🌿</span><div class="peer-company-name">{{ badge.company }}</div><div class="peer-company-role">{{ badge.role }}</div></div>
+          {% else %}
+          <div class="peer-company" style="background:var(--linen)"><span>🎯</span><div class="peer-company-name">Seeking Roles</div><div class="peer-company-role">Student</div></div>
+          {% endif %}
+          {% endwith %}
           <div class="peer-stats">
-            <div class="ps-item"><div class="ps-num">24</div><div class="ps-lbl">Projects</div></div>
-            <div class="ps-item"><div class="ps-num">812</div><div class="ps-lbl">CF Solved</div></div>
-            <div class="ps-item"><div class="ps-num">1847</div><div class="ps-lbl">CF Rating</div></div>
+            <div class="ps-item"><div class="ps-num">{% if peer.profile.codeforces %}--{% else %}0{% endif %}</div><div class="ps-lbl">Projects</div></div>
+            <div class="ps-item"><div class="ps-num">{% if peer.profile.codeforces %}240{% else %}0{% endif %}</div><div class="ps-lbl">CF Solved</div></div>
+            <div class="ps-item"><div class="ps-num">{% if peer.profile.codeforces %}1400{% else %}0{% endif %}</div><div class="ps-lbl">CF Rating</div></div>
           </div>
-          <div class="peer-skills"><span class="skill-tag">Python</span><span class="skill-tag">ML</span><span class="skill-tag">React</span><span class="skill-tag">DSA</span></div>
+          <div class="peer-skills">
+            {% for skill in peer.profile.skills %}
+            <span class="skill-tag">{{ skill }}</span>
+            {% empty %}
+            <span class="skill-tag">Peer</span>
+            {% endfor %}
+          </div>
           <div class="peer-actions" style="margin-top:16px">
-            <button class="btn-clay btn-clay--rust follow-btn" onclick="followPeer(this)">Follow</button>
-            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
+            {% if peer.f_status == 'accepted' %}
+              <button class="btn-clay btn-clay--sage follow-btn" disabled>✓ Connected</button>
+            {% elif peer.f_status == 'pending' %}
+              <button class="btn-clay btn-clay--outline follow-btn" disabled>⌛ Requested</button>
+            {% else %}
+              <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ peer.id }}">
+                <input type="hidden" name="action" value="request">
+                <button type="submit" class="btn-clay btn-clay--rust follow-btn">Follow</button>
+              </form>
+            {% endif %}
+            <a href="{% url 'user_profile' peer.id %}" class="btn-clay btn-clay--outline">View Profile</a>
           </div>
         </div>
-
-        <div class="clay-card peer-card reveal">
-          <div class="peer-top">
-            <div class="peer-av" style="background:var(--mint-light);color:var(--sage)">MS</div>
-            <div style="flex:1">
-              <div class="peer-name">Mohammed Saleem</div>
-              <div class="peer-meta">IT · MIT Chennai · Senior 2023</div>
-              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--rust" style="font-size:9px">Senior</span><span class="pill pill--green" style="font-size:9px">● Online</span></div>
-            </div>
-          </div>
-          <div class="peer-company"><span>🔶</span><div class="peer-company-name">Amazon</div><div class="peer-company-role">SDE I</div></div>
-          <div class="peer-stats">
-            <div class="ps-item"><div class="ps-num">18</div><div class="ps-lbl">Projects</div></div>
-            <div class="ps-item"><div class="ps-num">1.2k</div><div class="ps-lbl">CF Solved</div></div>
-            <div class="ps-item"><div class="ps-num">2104</div><div class="ps-lbl">CF Rating</div></div>
-          </div>
-          <div class="peer-skills"><span class="skill-tag">Java</span><span class="skill-tag">Spring</span><span class="skill-tag">AWS</span><span class="skill-tag">System Design</span></div>
-          <div class="peer-actions" style="margin-top:16px">
-            <button class="btn-clay btn-clay--sage follow-btn" onclick="followPeer(this)">Follow</button>
-            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
-          </div>
-        </div>
-
-        <div class="clay-card peer-card reveal">
-          <div class="peer-top">
-            <div class="peer-av" style="background:var(--lilac-light);color:var(--lilac-mid)">PV</div>
-            <div style="flex:1">
-              <div class="peer-name">Priya Venkat</div>
-              <div class="peer-meta">CSE · PSG Tech · Junior 2026</div>
-              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--lilac" style="font-size:9px">Junior</span><span class="pill pill--green" style="font-size:9px">● Online</span></div>
-            </div>
-          </div>
-          <div class="peer-company" style="background:var(--linen)"><span>🎯</span><div class="peer-company-name">Seeking Roles</div><div class="peer-company-role">SWE · Full Stack</div></div>
-          <div class="peer-stats">
-            <div class="ps-item"><div class="ps-num">9</div><div class="ps-lbl">Projects</div></div>
-            <div class="ps-item"><div class="ps-num">340</div><div class="ps-lbl">CF Solved</div></div>
-            <div class="ps-item"><div class="ps-num">1420</div><div class="ps-lbl">CF Rating</div></div>
-          </div>
-          <div class="peer-skills"><span class="skill-tag">C++</span><span class="skill-tag">Django</span><span class="skill-tag">WebSockets</span></div>
-          <div class="peer-actions" style="margin-top:16px">
-            <button class="btn-clay btn-clay--lilac follow-btn" onclick="followPeer(this)">Follow</button>
-            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
-          </div>
-        </div>
-
-        <div class="clay-card peer-card reveal">
-          <div class="peer-top">
-            <div class="peer-av" style="background:var(--yellow-light);color:#9a6f00">KR</div>
-            <div style="flex:1">
-              <div class="peer-name">Karthik R</div>
-              <div class="peer-meta">IT · Anna University · Senior 2024</div>
-              <div style="display:flex;gap:6px;margin-top:4px"><span class="pill pill--rust" style="font-size:9px">Senior</span></div>
-            </div>
-          </div>
-          <div class="peer-company"><span>⬛</span><div class="peer-company-name">Microsoft</div><div class="peer-company-role">SWE II</div></div>
-          <div class="peer-stats">
-            <div class="ps-item"><div class="ps-num">31</div><div class="ps-lbl">Projects</div></div>
-            <div class="ps-item"><div class="ps-num">940</div><div class="ps-lbl">CF Solved</div></div>
-            <div class="ps-item"><div class="ps-num">1980</div><div class="ps-lbl">CF Rating</div></div>
-          </div>
-          <div class="peer-skills"><span class="skill-tag">C#</span><span class="skill-tag">.NET</span><span class="skill-tag">Azure</span><span class="skill-tag">DSA</span></div>
-          <div class="peer-actions" style="margin-top:16px">
-            <button class="btn-clay btn-clay--rust follow-btn" onclick="followPeer(this)">Follow</button>
-            <a href="{% url 'profile' %}" class="btn-clay btn-clay--outline">View Profile</a>
-          </div>
-        </div>
+        {% empty %}
+        <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">No other users found yet.</p>
+        {% endfor %}
       </div>
     </div>
 
@@ -199,23 +163,32 @@
     <aside class="connect-sidebar">
       <!-- Pending requests -->
       <div class="clay-card pending-card reveal">
-        <h4>Pending requests <span style="background:var(--rust);color:white;font-size:10px;padding:2px 7px;border-radius:100px;margin-left:6px">2</span></h4>
+        <h4>Pending requests <span style="background:var(--rust);color:white;font-size:10px;padding:2px 7px;border-radius:100px;margin-left:6px">{{ pending_requests|length }}</span></h4>
+        {% for req in pending_requests %}
         <div class="pending-item">
-          <div class="pi-av" style="background:var(--rust)">RK</div>
-          <div class="pi-info"><div class="pi-name">Ravi Kumar</div><div class="pi-meta">Google · SWE · wants to follow you</div></div>
+          <div class="pi-av" style="background:var(--rust)">{{ req.follower.first_name|first|upper }}{{ req.follower.last_name|first|upper }}</div>
+          <div class="pi-info">
+            <div class="pi-name">{{ req.follower.get_full_name|default:req.follower.username }}</div>
+            <div class="pi-meta">{{ req.follower.profile.college|default:"Student" }} · wants to connect</div>
+          </div>
           <div class="pi-actions">
-            <button class="pi-accept" title="Accept">✓</button>
-            <button class="pi-decline" title="Decline">✕</button>
+            <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ req.follower.id }}">
+              <input type="hidden" name="action" value="accept">
+              <button type="submit" class="pi-accept" title="Accept">✓</button>
+            </form>
+            <form method="POST" action="{% url 'follow_action' %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ req.follower.id }}">
+              <input type="hidden" name="action" value="decline">
+              <button type="submit" class="pi-decline" title="Decline">✕</button>
+            </form>
           </div>
         </div>
-        <div class="pending-item">
-          <div class="pi-av" style="background:var(--lilac-mid)">DS</div>
-          <div class="pi-info"><div class="pi-name">Divya S</div><div class="pi-meta">NIT Trichy · CSE · wants to follow you</div></div>
-          <div class="pi-actions">
-            <button class="pi-accept" title="Accept">✓</button>
-            <button class="pi-decline" title="Decline">✕</button>
-          </div>
-        </div>
+        {% empty %}
+        <p style="font-size:12px;color:var(--muted);padding:10px 0;">No pending requests.</p>
+        {% endfor %}
       </div>
 
       <!-- Suggestions -->
@@ -238,12 +211,11 @@
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="clay-card reveal" style="padding:20px">
         <h4 style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:14px">Your network</h4>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div style="background:var(--chalk-warm);border-radius:10px;padding:12px;text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:900">12</div><div style="font-size:11px;color:var(--muted)">Following</div></div>
-          <div style="background:var(--chalk-warm);border-radius:10px;padding:12px;text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:900">8</div><div style="font-size:11px;color:var(--muted)">Followers</div></div>
+          <div style="background:var(--chalk-warm);border-radius:10px;padding:12px;text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:900">{{ following_count }}</div><div style="font-size:11px;color:var(--muted)">Following</div></div>
+          <div style="background:var(--chalk-warm);border-radius:10px;padding:12px;text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:900">{{ followers_count }}</div><div style="font-size:11px;color:var(--muted)">Followers</div></div>
         </div>
       </div>
     </aside>
