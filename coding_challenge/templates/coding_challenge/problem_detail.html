@@ -1,0 +1,216 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ problem.title }} — Problem Solver | NexusLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'style.css' %}"><link rel="stylesheet" href="{% static 'pages.css' %}">
+
+<style>
+.user-avatar-nav { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; text-decoration: none; position: relative; box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 3.5px var(--rust); transition: box-shadow 0.2s; }
+.user-avatar-nav:hover { box-shadow: 0 0 0 2px var(--rust-light), 0 0 0 4px var(--rust); }
+.user-avatar-nav img { width: 100%; height: 100%; object-fit: cover; }
+.user-avatar-fallback { display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--rust); color: white; font-size: 13px; font-weight: 800; font-family: var(--font-body); }
+
+
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursorTrail"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="{% url 'index' %}" class="logo"><div class="logo-mark">N</div><span>NexusLink</span></a>
+    <ul class="nav-links">
+      <li><a href="{% url 'index' %}">Home</a></li>
+      <li><a href="{% url 'resources' %}">Resources</a></li>
+      <li><a href="{% url 'chat' %}">Chat</a></li>
+      <li><a href="{% url 'rooms' %}">Study Rooms</a></li>
+      <li><a href="{% url 'connect' %}">Connect</a></li>
+      <li><a href="{% url 'coding_challenge:problem_list' %}" class="active">Problem Solver</a></li>
+      <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li><a href="{% url 'profile' %}">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="user-avatar-nav" title="{{ user.get_full_name|default:user.username }}">
+          {% if user.socialaccount_set.all %}
+            <img src="{{ user.socialaccount_set.first.get_avatar_url }}" alt="{{ user.first_name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span class="user-avatar-fallback">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% else %}
+            <span class="user-avatar-fallback" style="display:flex;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'account_logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost" style="font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'custom_signup' %}" class="btn-clay btn-clay--rust">Join free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-body" style="padding-top: 100px;">
+<div style="display:flex; gap:24px; max-width:1400px; margin:0 auto; width:100%;">
+
+  <!-- Editor panel -->
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <h2 style="color:var(--ink); margin:0;">{{ problem.title }}</h2>
+      <select id="lang-select" onchange="changeLanguage()" style="padding:6px 12px; border-radius:6px; border:1px solid var(--border); font-family:var(--font-body); font-weight:600; cursor:pointer;">
+        <option value="71" data-lang="python">Python 3</option>
+        <option value="54" data-lang="cpp">C++</option>
+        <option value="62" data-lang="java">Java</option>
+        <option value="63" data-lang="javascript">JavaScript</option>
+      </select>
+    </div>
+    <pre style="background:var(--chalk-warm); color:var(--ink); border: 1px solid var(--border); padding:16px; border-radius:12px;
+                white-space:pre-wrap; margin-bottom:16px; font-family:var(--font-body); font-weight:600;">{{ problem.description }}</pre>
+
+    <!-- Editor Container -->
+    <div id="editor" style="height:450px; border-radius:12px; border:2px solid var(--border); box-shadow:var(--clay-shadow); overflow:hidden;"></div>
+
+    <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <button id="submit-btn" onclick="submitCode()"
+        style="padding:10px 28px; font-size:15px; font-weight:600;
+               background:#6366f1; color:#fff; border:none;
+               border-radius:8px; cursor:pointer;">
+        Submit Solution
+      </button>
+      <div id="result" style="font-size:14px;"></div>
+    </div>
+  </div>
+
+  <!-- Leaderboard panel -->
+  <div class="clay-card" style="width:380px; flex-shrink:0; align-self:flex-start; height:fit-content; border:1px solid var(--border);">
+    <h3 style="margin-bottom:10px; font-family:var(--font-heading); color:var(--ink);">Live Leaderboard</h3>
+    <div id="lb-status" style="font-size:12px; font-weight:700; color:var(--mint-dark); margin-bottom:12px;">Connecting…</div>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--color-border-secondary, #333);">
+          <th style="text-align:left; padding:6px 8px;">#</th>
+          <th style="text-align:left; padding:6px 8px;">Student</th>
+          <th style="text-align:center; padding:6px 8px;">Score</th>
+          <th style="text-align:center; padding:6px 8px;">Tests</th>
+          <th style="text-align:center; padding:6px 8px;">Time</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body">
+        <tr><td colspan="5" style="padding:12px; color:#888;">No submissions yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script>
+  // Monaco
+  const boilerplates = {
+    python: '# Write your Python 3 code here\nimport sys\n',
+    cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your C++ code here\n    return 0;\n}\n',
+    java: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Write your Java code here\n    }\n}\n',
+    javascript: '// Write your JavaScript code here\n'
+  };
+
+  require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
+  require(["vs/editor/editor.main"], () => {
+    window.editor = monaco.editor.create(document.getElementById("editor"), {
+      value: boilerplates["python"],
+      language: "python",
+      theme: "vs",
+      fontSize: 14,
+      minimap: { enabled: false },
+    });
+  });
+
+  function changeLanguage() {
+    if(!window.editor) return;
+    const sel = document.getElementById("lang-select");
+    const opt = sel.options[sel.selectedIndex];
+    const langStr = opt.getAttribute("data-lang");
+    monaco.editor.setModelLanguage(window.editor.getModel(), langStr);
+    window.editor.setValue(boilerplates[langStr]);
+  }
+
+  // WebSocket
+  const problemId = {{ problem.id }};
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws/cc/leaderboard/${problemId}/`);
+  const statusEl = document.getElementById("lb-status");
+
+  ws.onopen    = () => statusEl.textContent = "● Live";
+  ws.onclose   = () => statusEl.textContent = "○ Disconnected";
+  ws.onerror   = () => statusEl.textContent = "Connection error";
+
+  ws.onmessage = (e) => {
+    const rows  = JSON.parse(e.data);
+    const tbody = document.getElementById("lb-body");
+    const color = { accepted: "#22c55e", partial: "#f59e0b", error: "#ef4444", pending: "#94a3b8" };
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:12px;color:#888;">No submissions yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr style="border-bottom:1px solid var(--color-border-tertiary,#2d2d2d);
+                 ${i === 0 ? "font-weight:600;" : ""}">
+        <td style="padding:6px 8px;">${i + 1}</td>
+        <td style="padding:6px 8px;">${r.username}</td>
+        <td style="padding:6px 8px; text-align:center; color:${color[r.status]};">
+          ${r.score}%
+        </td>
+        <td style="padding:6px 8px; text-align:center;">${r.passed} / ${r.total}</td>
+        <td style="padding:6px 8px; text-align:center; color:#888;">${r.submitted_at}</td>
+      </tr>
+    `).join("");
+  };
+
+  // Submit
+  async function submitCode() {
+    const btn = document.getElementById("submit-btn");
+    const res = document.getElementById("result");
+    btn.disabled = true;
+    btn.textContent = "Judging…";
+    res.textContent = "";
+
+    try {
+      const r = await fetch(`/contest/${problemId}/submit/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "",
+        },
+        body: JSON.stringify({ 
+            source_code: window.editor.getValue(),
+            language_id: parseInt(document.getElementById("lang-select").value)
+        }),
+      });
+      const d = await r.json();
+      const c = { accepted: "#22c55e", partial: "#f59e0b", error: "#ef4444" };
+      res.innerHTML = `
+        <span style="color:${c[d.status] ?? "#fff"};font-weight:600;">${d.status.toUpperCase()}</span>
+        &nbsp;—&nbsp;Score: <strong>${d.score}%</strong>
+        &nbsp;|&nbsp;Passed: <strong>${d.passed}/${d.total}</strong>
+      `;
+    } catch (err) {
+      res.textContent = "Error: " + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Submit Solution";
+    }
+  }
+</script>
+</div>
+</div>
+<script src="{% static 'app.js' %}"></script>
+</body>
+</html>

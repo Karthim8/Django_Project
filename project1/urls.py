@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('appname.urls')),
     path('accounts/', include('accounts.urls')),   # Custom signup + verify
-    path('accounts/', include('allauth.urls')),     # Google login / allauth
+    path('accounts/', include('allauth.urls')), 
+    path("contest/", include("coding_challenge.urls")),    # Google login / allauth
 ]

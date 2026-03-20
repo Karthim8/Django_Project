@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'appname',#for chat features
     'accounts',#for user authentication
     'channels',
+    'coding_challenge',
     'allauth',                # ✅ REQUIRED
     'allauth.account',        # 🔥 IMPORTANT (missing → your error)
     'allauth.socialaccount',  # 🔥 IMPORTANT
