@@ -142,9 +142,18 @@ class Resource(models.Model):
 #  Announcements
 # ──────────────────────────────────────────────
 class Announcement(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ('general',   'General'),
+        ('hackathon', 'Hackathon'),
+        ('workshop',  'Workshop'),
+        ('seminar',   'Seminar'),
+        ('placement', 'Placement Drive'),
+    ]
+
     title       = models.CharField(max_length=200)
     description = models.TextField()
     image_url   = models.URLField(blank=True)
+    event_type  = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, default='general')
     event_date  = models.DateTimeField(null=True, blank=True)
     author      = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcements')
     is_pinned   = models.BooleanField(default=False)

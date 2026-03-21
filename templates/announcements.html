@@ -18,6 +18,11 @@
 .ann-footer { display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px dashed var(--rust-light); font-size: 12px; color: var(--muted); }
 .ann-author { font-weight: 700; color: var(--rust); }
 .ann-date { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 12px; font-weight: 700; color: #a84e00; background: var(--peach-light); padding: 4px 10px; border-radius: 6px; width: fit-content; }
+.ann-event-badge { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; z-index: 2; }
+.ann-badge-hackathon { background: #1a1a2e; color: #e2b96f; box-shadow: 0 4px 10px rgba(26,26,46,0.3); }
+.ann-badge-workshop  { background: #1e4d2b; color: #7ef2a3; box-shadow: 0 4px 10px rgba(30,77,43,0.3); }
+.ann-badge-seminar   { background: #1a2e4a; color: #7ec8f2; box-shadow: 0 4px 10px rgba(26,46,74,0.3); }
+.ann-badge-placement { background: #2e1a4a; color: #c87ef2; box-shadow: 0 4px 10px rgba(46,26,74,0.3); }
 
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .modal-content { background: var(--chalk); width: 90%; max-width: 500px; padding: 40px; border-radius: 24px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 4px solid white; }
@@ -100,7 +105,16 @@
     {% for ann in announcements %}
     <div class="clay-card announcement-card">
       {% if ann.is_pinned %}<div class="ann-pinned">pinned</div>{% endif %}
-      {% if ann.image_url %}<img src="{{ ann.image_url }}" class="ann-image" alt="">{% endif %}
+      {% if ann.event_type != 'general' %}
+      <div class="ann-event-badge ann-badge-{{ ann.event_type }}">
+        {% if ann.event_type == 'hackathon' %}🏆 Hackathon
+        {% elif ann.event_type == 'workshop' %}🔧 Workshop
+        {% elif ann.event_type == 'seminar' %}🎓 Seminar
+        {% elif ann.event_type == 'placement' %}💼 Placement
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if ann.image_url %}<img src="{{ ann.image_url }}" class="ann-image" alt="{{ ann.title }}">{% endif %}
       <div class="ann-content">
         {% if ann.event_date %}
         <div class="ann-date">📅 {{ ann.event_date|date:"F j, Y — g:i A" }}</div>
@@ -153,9 +167,19 @@
           <input type="datetime-local" name="event_date" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--rust-light);">
         </div>
         <div class="form-field">
-          <label>Poster Image (Optional)</label>
-          <input type="file" name="image" accept="image/*" style="width:100%; padding:8px;">
+          <label>Event Type</label>
+          <select name="event_type" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--rust-light); background:white; font-family:inherit; cursor:pointer;">
+            <option value="general">📢 General</option>
+            <option value="hackathon">🏆 Hackathon</option>
+            <option value="workshop">🔧 Workshop</option>
+            <option value="seminar">🎓 Seminar</option>
+            <option value="placement">💼 Placement Drive</option>
+          </select>
         </div>
+      </div>
+      <div class="form-field" style="margin-bottom:16px;">
+        <label>Poster Image (Optional)</label>
+        <input type="file" name="image" accept="image/*" style="width:100%; padding:8px;">
       </div>
       <div style="margin-bottom:24px;">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">

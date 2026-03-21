@@ -410,7 +410,8 @@ def create_announcement(request):
         event_date = request.POST.get('event_date')
         image_file = request.FILES.get('image')
         is_pinned = request.POST.get('is_pinned') == 'on'
-        
+        event_type = request.POST.get('event_type', 'general')
+
         image_url = ""
         if image_file:
             from botocore.client import Config
@@ -433,6 +434,7 @@ def create_announcement(request):
             title=title,
             description=description,
             image_url=image_url,
+            event_type=event_type,
             event_date=event_date if event_date else None,
             author=request.user,
             is_pinned=is_pinned
