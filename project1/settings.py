@@ -20,10 +20,10 @@ UPSTASH_REDIS_URL = os.getenv('UPSTASH_REDIS_URL', 'redis://localhost:6379')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # AWS S3 Settings
-AWS_ACCESS_KEY_ID = 'AKIA5RD6B5GPLYBZWIOX'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'django-campusonnect'
-AWS_S3_REGION_NAME = 'ap-south-2'
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,7 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=nfnb_)5h8hyk53#$_u!a(w$qg2(_$b^rjhg1t3afee82f=#2r'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -105,8 +105,8 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '366738655809-pvuo65g4otuvhlkiuukj5q0h8eucbvj3.apps.googleusercontent.com',
-            'secret':    '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',
+            'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID'),
+            'secret':    os.getenv('GOOGLE_OAUTH_SECRET'),
             'key':       '',
         },
         'SCOPE': ['profile', 'email'],
@@ -114,8 +114,8 @@ SOCIALACCOUNT_PROVIDERS = {
     },
     'github': {
         'APP': {
-            'client_id': 'Ov23linFdeZUXNqKAjcu',
-            'secret': '8d02d19c16eb5c977968e8f48c2a91f75a575df2',
+            'client_id': os.getenv('GITHUB_OAUTH_CLIENT_ID'),
+            'secret': os.getenv('GITHUB_OAUTH_SECRET'),
         }
     }
 }
@@ -160,7 +160,7 @@ ASGI_APPLICATION = 'project1.asgi.application'
 
 DATABASES = {
     'default': dj_database_url.parse(
-        'postgresql://neondb_owner:npg_8Yxez7APOCMr@ep-wandering-breeze-a1cskk2m.ap-southeast-1.aws.neon.tech/neondb?sslmode=require',
+        os.getenv('DATABASE_URL'),
         conn_max_age=600,
     )
 }

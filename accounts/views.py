@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login
 from django.contrib import messages
 from django.conf import settings
+import os
 
 
 def custom_signup(request):
@@ -46,8 +47,8 @@ def custom_signup(request):
         request.session['verify_user_id'] = user.id
 
         # Store OTP in Upstash Redis (valid for 5 mins / 300s)
-        upstash_url = "https://humorous-jackal-77329.upstash.io"
-        upstash_token = "gQAAAAAAAS4RAAIncDI3OGIzOTFlYWY3ZjY0ZjEzOGExNDA2NjBhYzFhMzRkZXAyNzczMjk"
+        upstash_url = os.getenv('UPSTASH_REST_URL')
+        upstash_token = os.getenv('UPSTASH_REST_TOKEN')
         set_url = f"{upstash_url}/set/otp:{email}/{otp}/EX/300"
         
         req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer {upstash_token}"})
@@ -72,8 +73,8 @@ def verify_otp(request):
             return redirect('custom_signup')
 
         # Check OTP in Upstash Redis
-        upstash_url = "https://humorous-jackal-77329.upstash.io"
-        upstash_token = "gQAAAAAAAS4RAAIncDI3OGIzOTFlYWY3ZjY0ZjEzOGExNDA2NjBhYzFhMzRkZXAyNzczMjk"
+        upstash_url = os.getenv('UPSTASH_REST_URL')
+        upstash_token = os.getenv('UPSTASH_REST_TOKEN')
         get_url = f"{upstash_url}/get/otp:{email}"
         
         req = urllib.request.Request(get_url, headers={"Authorization": f"Bearer {upstash_token}"})
@@ -112,7 +113,7 @@ def verify_otp(request):
 
 def _send_verification_email_brevo(name, email, otp):
     """Send email via Brevo (Sendinblue) API."""
-    api_key = "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"
+    api_key = os.getenv('BREVO_API_KEY', '')
     url = "https://api.brevo.com/v3/smtp/email"
 
     html_body = f"""
