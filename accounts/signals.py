@@ -4,6 +4,24 @@ from allauth.socialaccount.signals import social_account_added
 from django.contrib.auth.models import User
 from .models import DeveloperProfile
 from .tasks import evaluate_github_profile
+'''
+
+📦 Real Example
+@receiver(social_account_added)
+def trigger_github_evaluation(request, sociallogin, **kwargs):
+
+👉 Means:
+
+WHEN:
+    social_account_added happens
+
+THEN:
+    run trigger_github_evaluation()
+
+
+'''
+
+
 
 @receiver(social_account_added)
 def trigger_github_evaluation(request, sociallogin, **kwargs):
@@ -13,7 +31,7 @@ def trigger_github_evaluation(request, sociallogin, **kwargs):
             user=user,
             defaults={'github_username': sociallogin.account.extra_data.get('login', '')}
         )
-        # If user reconnects/updates or creates for first time, fire task
+            # If user reconnects/updates or creates for first time, fire task
         profile.evaluation_status = 'pending'
         profile.save()
         evaluate_github_profile.delay(user.id)

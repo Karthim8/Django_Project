@@ -19,6 +19,11 @@ load_dotenv()
 UPSTASH_REDIS_URL = os.getenv('UPSTASH_REDIS_URL', 'redis://localhost:6379')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
+# Admin / Email
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', '')
+BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', '')
+BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'NexusLink')
+
 # AWS S3 Settings
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')

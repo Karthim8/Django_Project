@@ -1,10 +1,11 @@
+import os
 import requests
 
 JUDGE0_URL = "https://Judge0-CE.proxy-production.allthingsdev.co/submissions"
 HEADERS = {
-    "x-apihub-key":      "sNGMmaQ3yIiXZvtoIMA7JhiGDFFOIT0vqce3P5i9BUPgBvKYDS",
-    "x-apihub-host":     "Judge0-CE.allthingsdev.co",
-    "x-apihub-endpoint": "6e65686d-40b0-4bf7-a12f-1f6d033c4473",
+    "x-apihub-key":      os.getenv("JUDGE0_API_KEY", ""),
+    "x-apihub-host":     os.getenv("JUDGE0_API_HOST", "Judge0-CE.allthingsdev.co"),
+    "x-apihub-endpoint": os.getenv("JUDGE0_API_ENDPOINT", ""),
     "Content-Type":      "application/json",
 }
 

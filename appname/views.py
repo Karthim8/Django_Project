@@ -385,19 +385,19 @@ from accounts.models import UserProfile, DeveloperProfile
 def announcements_view(request):
     is_authorized = False
     if request.user.is_authenticated:
-        if request.user.email == 'karthikeyanspro@gmail.com' or (hasattr(request.user, 'profile') and request.user.profile.is_club_secretary):
+        if request.user.email == settings.ADMIN_EMAIL or (hasattr(request.user, 'profile') and request.user.profile.is_club_secretary):
             is_authorized = True
     
     announcements = Announcement.objects.all().order_by('-is_pinned', '-created_at')
     return render(request, "announcements.html", {
         "announcements": announcements,
         "is_authorized": is_authorized,
-        "is_super_admin": request.user.is_authenticated and request.user.email == 'karthikeyanspro@gmail.com'
+        "is_super_admin": request.user.is_authenticated and request.user.email == settings.ADMIN_EMAIL
     })
 
 @login_required
 def create_announcement(request):
-    is_super_admin = request.user.email == 'karthikeyanspro@gmail.com'
+    is_super_admin = request.user.email == settings.ADMIN_EMAIL
     is_secretary = hasattr(request.user, 'profile') and request.user.profile.is_club_secretary
     
     if not (is_super_admin or is_secretary):
@@ -446,7 +446,7 @@ def create_announcement(request):
 def delete_announcement(request, pk):
     from django.shortcuts import get_object_or_404
     announcement = get_object_or_404(Announcement, pk=pk)
-    is_super_admin = request.user.email == 'karthikeyanspro@gmail.com'
+    is_super_admin = request.user.email == settings.ADMIN_EMAIL
     
     if announcement.author == request.user or is_super_admin:
         announcement.delete()
@@ -457,7 +457,7 @@ def delete_announcement(request, pk):
 
 @login_required
 def manage_roles_view(request):
-    if request.user.email != 'karthikeyanspro@gmail.com':
+    if request.user.email != settings.ADMIN_EMAIL:
         messages.error(request, "Access denied.")
         return redirect('index')
     
@@ -476,5 +476,5 @@ def manage_roles_view(request):
         profile.save()
         return redirect('manage_roles')
 
-    users = User.objects.all().select_related('profile').exclude(email='karthikeyanspro@gmail.com').order_by('username')
+    users = User.objects.all().select_related('profile').exclude(email=settings.ADMIN_EMAIL).order_by('username')
     return render(request, "manage_roles.html", {"users": users})

@@ -4,7 +4,23 @@ import json
 from datetime import datetime, timezone, timedelta
 
 from celery import shared_task
+'''
+from celery import shared_task
+
+👉 This makes a background task
+
+Runs async (in background)
+Doesn’t block user request
+'''
 from github import Github
+'''
+👉 GitHub API client
+Used to fetch:
+
+repos
+commits
+PRs
+'''
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import google.generativeai as genai
@@ -12,7 +28,7 @@ import google.generativeai as genai
 from .models import DeveloperProfile
 
 LOW_QUALITY_KEYWORDS = [
-    "fix", "test", "update", "minor", "wip",
+    "test", "update", "minor", "wip",
     "temp", "commit", "change", "edit", "misc"
 ]
 

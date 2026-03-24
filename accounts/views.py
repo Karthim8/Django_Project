@@ -14,7 +14,7 @@ import os
 def custom_signup(request):
     """Custom signup view with name, email, password and Brevo email verification."""
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
+        name = request.POST.get('name', '').strip() #removes spaces
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
         errors = []
@@ -50,7 +50,7 @@ def custom_signup(request):
         upstash_url = os.getenv('UPSTASH_REST_URL')
         upstash_token = os.getenv('UPSTASH_REST_TOKEN')
         set_url = f"{upstash_url}/set/otp:{email}/{otp}/EX/300"
-        
+        #Setting key,value in the redis 
         req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer {upstash_token}"})
         urllib.request.urlopen(req)
 
@@ -132,7 +132,7 @@ def _send_verification_email_brevo(name, email, otp):
     """
 
     payload = json.dumps({
-        "sender": {"name": "NexusLink", "email": "karthikeyanspro@gmail.com"},
+        "sender": {"name": getattr(settings, 'BREVO_SENDER_NAME', 'NexusLink'), "email": getattr(settings, 'BREVO_SENDER_EMAIL', '')},
         "to": [{"email": email, "name": name}],
         "subject": "Verify your NexusLink account 🎓",
         "htmlContent": html_body

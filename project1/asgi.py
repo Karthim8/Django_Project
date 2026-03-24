@@ -22,7 +22,8 @@ from appname.routing import websocket_urlpatterns
 from coding_challenge.routing import cc_websocket_urlpatterns
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project1.settings')
-
+# http://
+# ws://
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(
