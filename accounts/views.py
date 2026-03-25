@@ -32,14 +32,19 @@ def custom_signup(request):
             return render(request, 'account/signup.html', {'errors': errors, 'name': name, 'email': email})
 
         # Create user (inactive until email verified)
-        first_name = name.split()[0]
-        last_name = ' '.join(name.split()[1:]) if len(name.split()) > 1 else ''
-        username = email.split('@')[0] + '_' + str(uuid.uuid4())[:8]
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.first_name = first_name
-        user.last_name = last_name
-        user.is_active = False  # inactive until verified
-        user.save()
+        try:
+            first_name = name.split()[0]
+            last_name = ' '.join(name.split()[1:]) if len(name.split()) > 1 else ''
+            username = email.split('@')[0] + '_' + str(uuid.uuid4())[:8]
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.first_name = first_name
+            user.last_name = last_name
+            user.is_active = False  # inactive until verified
+            user.save()
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            errors.append("An error occurred while creating your account. Please try again.")
+            return render(request, 'account/signup.html', {'errors': errors, 'name': name, 'email': email})
 
         # Generate 6-digit OTP
         otp = str(random.randint(100000, 999999))
@@ -47,12 +52,22 @@ def custom_signup(request):
         request.session['verify_user_id'] = user.id
 
         # Store OTP in Upstash Redis (valid for 5 mins / 300s)
-        upstash_url = os.getenv('UPSTASH_REST_URL')
-        upstash_token = os.getenv('UPSTASH_REST_TOKEN')
-        set_url = f"{upstash_url}/set/otp:{email}/{otp}/EX/300"
-        #Setting key,value in the redis 
-        req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer {upstash_token}"})
-        urllib.request.urlopen(req)
+        try:
+            upstash_url = os.getenv('UPSTASH_REST_URL')
+            upstash_token = os.getenv('UPSTASH_REST_TOKEN')
+            # URL encode the email to handle special characters safely
+            import urllib.parse
+            safe_email = urllib.parse.quote(email)
+            set_url = f"{upstash_url}/set/otp:{safe_email}/{otp}/EX/300"
+            
+            req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer {upstash_token}"})
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as e:
+            print(f"[Upstash] Error setting OTP: {e}")
+            # If Redis fails, we delete the created user so they can try again
+            user.delete()
+            errors.append("We're currently experiencing issues sending verification codes. Please try again later.")
+            return render(request, 'account/signup.html', {'errors': errors, 'name': name, 'email': email})
 
         # Send OTP email via Brevo
         _send_verification_email_brevo(name, email, otp)
@@ -75,12 +90,18 @@ def verify_otp(request):
         # Check OTP in Upstash Redis
         upstash_url = os.getenv('UPSTASH_REST_URL')
         upstash_token = os.getenv('UPSTASH_REST_TOKEN')
-        get_url = f"{upstash_url}/get/otp:{email}"
+        import urllib.parse
+        safe_email = urllib.parse.quote(email)
+        get_url = f"{upstash_url}/get/otp:{safe_email}"
         
-        req = urllib.request.Request(get_url, headers={"Authorization": f"Bearer {upstash_token}"})
-        resp = urllib.request.urlopen(req)
-        data = json.loads(resp.read().decode())
-        stored_otp = data.get("result")
+        try:
+            req = urllib.request.Request(get_url, headers={"Authorization": f"Bearer {upstash_token}"})
+            resp = urllib.request.urlopen(req, timeout=5)
+            data = json.loads(resp.read().decode())
+            stored_otp = data.get("result")
+        except Exception as e:
+            print(f"[Upstash] Error getting OTP: {e}")
+            stored_otp = None
 
         if stored_otp and str(stored_otp) == str(submitted_otp):
             try:
@@ -89,9 +110,13 @@ def verify_otp(request):
                 user.save()
                 
                 # Cleanup Upstash
-                del_url = f"{upstash_url}/del/otp:{email}"
-                del_req = urllib.request.Request(del_url, headers={"Authorization": f"Bearer {upstash_token}"})
-                urllib.request.urlopen(del_req)
+                try:
+                    del_url = f"{upstash_url}/del/otp:{safe_email}"
+                    del_req = urllib.request.Request(del_url, headers={"Authorization": f"Bearer {upstash_token}"})
+                    urllib.request.urlopen(del_req, timeout=5)
+                except Exception as e:
+                    print(f"[Upstash] Error deleting OTP: {e}")
+                    pass # Non-critical if deletion fails, it expires in 5m anyway
 
                 request.session.pop('verify_email', None)
                 request.session.pop('verify_user_id', None)

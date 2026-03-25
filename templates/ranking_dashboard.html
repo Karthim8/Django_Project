@@ -81,12 +81,27 @@ td { font-size: 14px; font-weight: 600; color: var(--ink); }
 </nav>
 
 <div class="dashboard-container">
-  {% if not profile or profile.evaluation_status != 'complete' %}
+  {% if not github_connected %}
+  <!-- Ask for GitHub Authorization -->
+  <div class="section-card" style="text-align: center; padding: 60px 24px;">
+    <h3 class="section-title">Connect GitHub</h3>
+    <p style="font-family:var(--font-body); font-size:16px; color:var(--muted); margin-bottom:32px;">
+      Please authorize GitHub to perform your developer analysis and generate your dashboard.
+    </p>
+    {% load socialaccount %}
+    <a href="{% provider_login_url 'github' process='connect' next='/dashboard/' %}" class="btn-clay btn-clay--rust" style="display:inline-flex; align-items:center; gap:12px; font-size:16px; padding:12px 24px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.11.82-.26.82-.577v-2.165c-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.73.083-.73 1.205.085 1.838 1.238 1.838 1.238 1.07 1.833 2.81 1.304 3.495.996.108-.776.42-1.305.763-1.605-2.665-.305-5.466-1.335-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.125-.305-.535-1.525.115-3.175 0 0 1.005-.32 3.3 1.23.955-.265 1.98-.395 3-.4 1.02.005 2.045.135 3 .4 2.29-1.55 3.295-1.23 3.295-1.23.655 1.65.245 2.87.12 3.175.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.62-5.475 5.92.43.37.815 1.1.815 2.22v3.295c0 .32.215.69.825.57C20.565 21.795 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+      Authorize GitHub
+    </a>
+  </div>
+  {% elif not profile or profile.evaluation_status != 'complete' %}
   <!-- Progress Bar (shown during evaluation matching user spec) -->
   <div id="evaluation-progress" class="section-card">
     <h3 class="section-title">Developer Analysis</h3>
     <p id="status-text" style="font-family:var(--font-body); color:var(--muted); font-weight:600; font-size:16px;">
-      {% if not profile %}Waiting for GitHub connection...{% else %}🔄 Resuming analysis...{% endif %}
+      🔄 Resuming analysis...
     </p>
     <div class="progress-bar-track">
       <div id="progress-bar" style="width: 0%"></div>
@@ -345,6 +360,7 @@ cal.paint({
 });
 {% endif %}
 </script>
+<script src="{% static 'app.js' %}"></script>
 <script src="{% static 'notifications.js' %}"></script>
 </body>
 </html>

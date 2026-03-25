@@ -121,22 +121,38 @@ def follow_action(request):
         
         if action == 'request':
             target_user = User.objects.get(id=user_id)
-            Follow.objects.get_or_create(follower=request.user, following=target_user, status='pending')
             
-            # Broadcast real-time notification
-            from channels.layers import get_channel_layer
-            from asgiref.sync import async_to_sync
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"notify_{target_user.id}",
-                {
-                    "type": "notification_update",
-                    "category": "follow",
-                    "count_update": 1
-                }
+            # Use update_or_create to avoid IntegrityError if a rejected follow already exists
+            follow_obj, created = Follow.objects.get_or_create(
+                follower=request.user, 
+                following=target_user,
+                defaults={'status': 'pending'}
             )
+            
+            if not created and follow_obj.status in ['rejected', 'decline']:
+                follow_obj.status = 'pending'
+                follow_obj.save()
 
-            messages.success(request, f"Follow request sent to {target_user.username}!")
+            if follow_obj.status == 'pending':
+                # Broadcast real-time notification
+                try:
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        f"notify_{target_user.id}",
+                        {
+                            "type": "notification_update",
+                            "category": "follow",
+                            "count_update": 1
+                        }
+                    )
+                except Exception as e:
+                    print(f"WebSocket notification failed: {e}")
+
+                messages.success(request, f"Follow request sent to {target_user.username}!")
+            else:
+                messages.info(request, f"You are already connected with {target_user.username}.")
             
         elif action == 'accept':
             follow_req = Follow.objects.get(follower_id=user_id, following=request.user, status='pending')
@@ -375,7 +391,12 @@ def dashboard_view(request):
     except DeveloperProfile.DoesNotExist:
         profile = None
 
-    return render(request, "ranking_dashboard.html", {"profile": profile})
+    github_connected = request.user.socialaccount_set.filter(provider='github').exists()
+
+    return render(request, "ranking_dashboard.html", {
+        "profile": profile,
+        "github_connected": github_connected
+    })
 
 # ──────────────────────────────────────────────
 #  Announcements & Roles
