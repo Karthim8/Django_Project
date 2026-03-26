@@ -1,12 +1,9 @@
 import os
 import requests
 
-JUDGE0_URL = "https://Judge0-CE.proxy-production.allthingsdev.co/submissions"
+JUDGE0_URL = "https://ce.judge0.com/submissions"
 HEADERS = {
-    "x-apihub-key":      os.getenv("JUDGE0_API_KEY", ""),
-    "x-apihub-host":     os.getenv("JUDGE0_API_HOST", "Judge0-CE.allthingsdev.co"),
-    "x-apihub-endpoint": os.getenv("JUDGE0_API_ENDPOINT", ""),
-    "Content-Type":      "application/json",
+    "Content-Type": "application/json",
 }
 
 def run_single_case(source_code: str, language_id: int, stdin: str) -> dict:
@@ -56,5 +53,6 @@ def judge_submission(submission, language_id=None) -> "Submission":
     submission.total_cases  = total
     submission.score        = int((passed / total) * 100) if total else 0
     submission.status       = "error" if error_msg else ("accepted" if passed == total else "partial")
+    submission.error_message = error_msg
     submission.save()
     return submission

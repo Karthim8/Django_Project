@@ -60,7 +60,7 @@ def custom_signup(request):
             safe_email = urllib.parse.quote(email)
             set_url = f"{upstash_url}/set/otp:{safe_email}/{otp}/EX/300"
             
-            req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer {upstash_token}"})
+            req = urllib.request.Request(set_url, headers={"Authorization": f"Bearer -{upstash_token}"})
             urllib.request.urlopen(req, timeout=5)
         except Exception as e:
             print(f"[Upstash] Error setting OTP: {e}")

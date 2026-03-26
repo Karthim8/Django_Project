@@ -27,6 +27,7 @@ class Submission(models.Model):
     problem      = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="submissions")
     source_code  = models.TextField()
     status       = models.CharField(max_length=20, choices=STATUS, default="pending")
+    error_message= models.TextField(blank=True, null=True)
     passed_cases = models.IntegerField(default=0)
     total_cases  = models.IntegerField(default=0)
     score        = models.IntegerField(default=0)

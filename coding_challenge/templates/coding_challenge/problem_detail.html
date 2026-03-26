@@ -200,11 +200,18 @@
       });
       const d = await r.json();
       const c = { accepted: "#22c55e", partial: "#f59e0b", error: "#ef4444" };
-      res.innerHTML = `
-        <span style="color:${c[d.status] ?? "#fff"};font-weight:600;">${d.status.toUpperCase()}</span>
-        &nbsp;—&nbsp;Score: <strong>${d.score}%</strong>
-        &nbsp;|&nbsp;Passed: <strong>${d.passed}/${d.total}</strong>
-      `;
+      if (d.status === 'error' && d.error_message) {
+        res.innerHTML = `
+          <span style="color:${c[d.status]};font-weight:600;">SYSTEM ERROR</span>
+          <div style="color:#ef4444; font-size:12px; margin-top:4px;">${d.error_message}</div>
+        `;
+      } else {
+        res.innerHTML = `
+          <span style="color:${c[d.status] ?? "#fff"};font-weight:600;">${d.status.toUpperCase()}</span>
+          &nbsp;—&nbsp;Score: <strong>${d.score}%</strong>
+          &nbsp;|&nbsp;Passed: <strong>${d.passed}/${d.total}</strong>
+        `;
+      }
     } catch (err) {
       res.textContent = "Error: " + err.message;
     } finally {

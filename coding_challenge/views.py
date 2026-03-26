@@ -109,4 +109,5 @@ def submit_code(request, problem_id: int):
         "score":  sub.score,
         "passed": sub.passed_cases,
         "total":  sub.total_cases,
+        "error_message": sub.error_message,
     })
